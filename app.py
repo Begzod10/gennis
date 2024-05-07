@@ -5,6 +5,7 @@ from flask_wtf.file import FileField, FileRequired
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from backend.models.models import *
+
 app = Flask(__name__, static_folder="frontend/build", static_url_path="/")
 
 CORS(app)
@@ -25,7 +26,6 @@ from backend.account.payment import *
 from backend.account.account import *
 from backend.account.overhead_capital import *
 from backend.account.salary import *
-
 
 # functions folder
 from backend.functions.checks import *
@@ -78,5 +78,7 @@ from backend.book.main import *
 # lead
 from backend.lead.views import *
 
+# mobile
+from backend.mobile.views import *
 if __name__ == '__main__':
     app.run()

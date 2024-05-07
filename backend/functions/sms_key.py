@@ -2,4 +2,5 @@
 # auth_token = 'cdd4068b52217ba9ececefce0924c451'
 #
 # sms_payment = "Gennis info"
+
 # number = "+998993656845"

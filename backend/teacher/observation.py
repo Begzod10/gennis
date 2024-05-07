@@ -4,7 +4,7 @@ from datetime import datetime
 
 from backend.functions.utils import find_calendar_date, iterate_models, get_json_field, api
 from backend.models.models import Users, Week, Groups, Group_Room_Week, \
-    CalendarMonth, CalendarYear, LessonPlan, LessonPlanStudents, or_
+    CalendarMonth, CalendarYear, LessonPlan, LessonPlanStudents, or_, CalendarDay
 from .models import TeacherObservation, ObservationOptions, ObservationInfo, \
     TeacherObservationDay, Teachers
 from pprint import pprint
@@ -195,9 +195,10 @@ def observed_group(group_id, date):
                                                                  TeacherObservationDay.group_id == group_id).order_by(
         TeacherObservationDay.id).all()
     teacher_observation = TeacherObservationDay.query.filter(TeacherObservationDay.teacher_id == group.teacher_id,
-                                                             TeacherObservationDay.calendar_month == calendar_month.id - 1,
+                                                             TeacherObservationDay.calendar_month == calendar_month.id,
                                                              TeacherObservationDay.group_id == group_id).order_by(
         TeacherObservationDay.id).all()
+
     for data in teacher_observation:
         days_list.append(data.day.date.strftime("%d"))
     days_list.sort()
@@ -211,10 +212,71 @@ def observed_group(group_id, date):
     years_list = list(dict.fromkeys(years_list))
     month_list.sort()
     years_list.sort()
+    print(teacher_observation_all)
     return jsonify({
         "month_list": month_list,
         "years_list": years_list,
-        "month": calendar_month.date.strftime("%m"),
+        "month": calendar_month.date.strftime("%m") if month_list[len(month_list) - 1] == calendar_month.date.strftime(
+            "%m") else month_list[len(month_list) - 1],
         "year": calendar_month.date.strftime("%Y"),
         "days": days_list
+    })
+
+
+@app.route(f'{api}/observed_group_info/<int:group_id>', methods=["POST"])
+@jwt_required()
+def observed_group_info(group_id):
+    day = get_json_field('day')
+    month = get_json_field('month')
+    year = get_json_field('year')
+    print(day)
+    print(month)
+    print(year)
+    date = datetime.strptime(year + "-" + month + "-" + day, "%Y-%m-%d")
+    calendar_day = CalendarDay.query.filter(CalendarDay.date == date).first()
+    observation_list = []
+    observation_options = ObservationOptions.query.order_by(ObservationOptions.id).all()
+    observation_infos = ObservationInfo.query.order_by(ObservationInfo.id).all()
+    average = 0
+    observer = {
+        "name": "",
+        "surname": ""
+    }
+    if calendar_day:
+        teacher_observation_day = TeacherObservationDay.query.filter(
+            TeacherObservationDay.calendar_day == calendar_day.id, TeacherObservationDay.group_id == group_id).first()
+        average = teacher_observation_day.average
+        observer['name'] = teacher_observation_day.user.name if teacher_observation_day else ""
+        observer['surname'] = teacher_observation_day.user.surname if teacher_observation_day else ""
+        for item in observation_infos:
+            print("info",item.id)
+            print("day",teacher_observation_day.id)
+            teacher_observations = TeacherObservation.query.filter(
+                TeacherObservation.observation_id == teacher_observation_day.id,
+                TeacherObservation.observation_info_id == item.id
+            ).first()
+            info = {
+                "title": item.title,
+                "values": [],
+                "comment": teacher_observations.comment
+            }
+
+            for option in observation_options:
+                teacher_observations = TeacherObservation.query.filter(
+                    TeacherObservation.observation_id == teacher_observation_day.id,
+                    TeacherObservation.observation_options_id == option.id,
+                    TeacherObservation.observation_info_id == item.id
+                ).first()
+                info["values"].append({
+                    "name": option.name,
+                    "value": teacher_observations.observation_option.value if teacher_observations and teacher_observations.observation_option else "",
+
+                })
+            observation_list.append(info)
+        pprint(observation_list)
+    return jsonify({
+        "info": observation_list,
+        "observation_options": iterate_models(observation_options),
+        "average": average,
+        "observer": observer
     })

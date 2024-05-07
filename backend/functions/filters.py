@@ -604,8 +604,8 @@ def old_current_dates(group_id=0):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     current_month = datetime.now().month
     old_year = datetime.now().year
-    old_month = datetime.now().month - 1
-    old_month2 = datetime.now().month - 1
+    old_month = datetime.now().month - 3
+    old_month2 = datetime.now().month - 3
     if old_month == 0:
         old_month = "12"
         old_year = old_year - 1
@@ -637,27 +637,27 @@ def old_current_dates(group_id=0):
     old_days.sort()
     if group_id != 0:
         day_list = weekday_from_date(day_list, current_month, current_year, week_list)
-    # if current_day > 6:
-    data = [
-        {
-            "name": calendar_month.date.strftime("%h"),
-            "value": calendar_month.date.strftime('%m'),
-            "days": day_list
-        }
-    ]
-    # else:
-    #     data = [
-    #         {
-    #             "name": calendar_month.date.strftime("%h"),
-    #             "value": calendar_month.date.strftime('%m'),
-    #             "days": day_list
-    #         },
-    #         {
-    #             "name": date.strftime("%h"),
-    #             "value": date.strftime('%m'),
-    #             "days": old_days
-    #         }
-    #     ]
+    if current_day > 8:
+        data = [
+            {
+                "name": calendar_month.date.strftime("%h"),
+                "value": calendar_month.date.strftime('%m'),
+                "days": day_list
+            }
+        ]
+    else:
+        data = [
+            {
+                "name": calendar_month.date.strftime("%h"),
+                "value": calendar_month.date.strftime('%m'),
+                "days": day_list
+            },
+            {
+                "name": date.strftime("%h"),
+                "value": date.strftime('%m'),
+                "days": old_days
+            }
+        ]
     return data
 
 

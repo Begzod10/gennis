@@ -68,7 +68,6 @@ def lesson_plan_list(group_id, date):
     for data in plan_list_month:
         days_list.append(data.date.strftime("%d"))
     days_list.sort()
-
     for plan in plan_list:
         if plan.date:
             month_list.append(plan.date.strftime("%m"))
