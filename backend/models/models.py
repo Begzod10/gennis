@@ -204,6 +204,7 @@ class CalendarDay(db.Model):
     observation = relationship("TeacherObservationDay", backref="day", order_by="TeacherObservationDay.id",
                                lazy='select')
     leads = relationship("Lead", backref="day", order_by="Lead.id", lazy='select')
+
     teacher_group_statistics = relationship("TeacherGroupStatistics", backref="day",
                                             order_by="TeacherGroupStatistics.id", lazy="select")
 

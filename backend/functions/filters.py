@@ -604,8 +604,8 @@ def old_current_dates(group_id=0):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     current_month = datetime.now().month
     old_year = datetime.now().year
-    old_month = datetime.now().month - 3
-    old_month2 = datetime.now().month - 3
+    old_month = datetime.now().month - 1
+    old_month2 = datetime.now().month - 1
     if old_month == 0:
         old_month = "12"
         old_year = old_year - 1

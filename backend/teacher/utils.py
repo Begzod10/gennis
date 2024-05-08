@@ -43,3 +43,5 @@ def get_students_info(group_id, hour2):
         }
         student_list.append(student_info)
     return student_list
+
+

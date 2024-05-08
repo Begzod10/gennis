@@ -80,5 +80,8 @@ from backend.lead.views import *
 
 # mobile
 from backend.mobile.views import *
+
+
+# teacher observation, attendance, teacher_group_statistics
 if __name__ == '__main__':
     app.run()

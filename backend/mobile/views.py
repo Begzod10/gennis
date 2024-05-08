@@ -1,4 +1,4 @@
-from app import app, or_, api, db, jsonify, contains_eager, request, desc
+from app import app, or_, api, db, jsonify, contains_eager, request, desc, extract
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.functions.utils import refresh_age, iterate_models, update_salary
 
@@ -11,13 +11,13 @@ from backend.models.models import PhoneList, Contract_Students
 from backend.models.models import Subjects
 from datetime import datetime
 from backend.models.models import Groups, Students, SubjectLevels, \
-    AttendanceHistoryStudent, Group_Room_Week, Week, Roles, CertificateLinks
+    AttendanceHistoryStudent, Group_Room_Week, Week, Roles, CertificateLinks, LessonPlanStudents
 from flask_jwt_extended import jwt_required
 from backend.group.class_model import Group_Functions
 
 from backend.models.models import LessonPlan
 
-from backend.teacher.utils import handle_get_request, handle_post_request, get_observations_for_year
+# from backend.book.utils import handle_get_request, handle_post_request, get_observations_for_year
 from backend.functions.debt_salary_update import staff_salary_update
 from backend.models.models import Teachers, TeacherSalary, StaffSalary, Staff, CalendarMonth, Users, CalendarYear, \
     TeacherBlackSalary
@@ -28,7 +28,7 @@ import os
 
 @app.route(f"{api}/mobile/refresh", methods=["POST"])
 @jwt_required(refresh=True)
-def refresh():
+def mobile_refresh():
     """
     refresh jwt token
     :return:
@@ -53,7 +53,7 @@ def refresh():
 
 
 @app.route(f'{api}/mobile/login2', methods=['POST', 'GET'])
-def login2():
+def mobile_login2():
     """
     login function
     create token
@@ -98,7 +98,7 @@ def login2():
 
 
 @app.route(f"{api}/mobile/logout", methods=["POST"])
-def logout():
+def mobile_logout():
     response = jsonify({"msg": "logout successful"})
     unset_jwt_cookies(response)
     return response
@@ -106,7 +106,7 @@ def logout():
 
 @app.route(f'{api}/mobile/my_groups/<int:user_id>', methods=['POST', 'GET'])
 @jwt_required()
-def my_groups(user_id):
+def mobile_my_groups(user_id):
     teacher = Teachers.query.filter(Teachers.user_id == user_id).first()
     student = Students.query.filter(Students.user_id == user_id).first()
     if teacher:
@@ -138,7 +138,7 @@ def my_groups(user_id):
 
 @app.route(f'{api}/mobile/group_profile/<int:group_id>')
 @jwt_required()
-def group_profile(group_id):
+def mobile_group_profile(group_id):
     group = Groups.query.filter_by(id=group_id).first()
     students = db.session.query(Students).join(Students.group).options(contains_eager(Students.group)).filter(
         Groups.id == group_id).order_by(Students.id).all()
@@ -268,18 +268,46 @@ def group_profile(group_id):
     })
 
 
-@app.route(f'{api}/mobile/lesson_plan_list/<int:group_id>')
+@app.route(f'{api}/mobile/lesson_plan_list/<int:group_id>', defaults={"date": None})
+@app.route(f'{api}/mobile/lesson_plan_list/<int:group_id>/<date>')
 @jwt_required()
-def lesson_plan_list(group_id):
-    plan_list = LessonPlan.query.filter(LessonPlan.group_id == group_id).order_by(LessonPlan.date).all()
+def mobile_lesson_plan_list(group_id, date):
+    days_list = []
+    month_list = []
+    years_list = []
+    plan_list = LessonPlan.query.filter(LessonPlan.group_id == group_id).order_by(LessonPlan.id).all()
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    if date:
+        date = datetime.strptime(date, "%Y-%m")
+    else:
+        date = calendar_month.date
+
+    plan_list_month = LessonPlan.query.filter(
+        extract('month', LessonPlan.date) == int(date.strftime("%m")),
+        extract('year', LessonPlan.date) == int(date.strftime("%Y")), LessonPlan.group_id == group_id).all()
+    for data in plan_list_month:
+        days_list.append(data.date.strftime("%d"))
+    days_list.sort()
+    for plan in plan_list:
+        if plan.date:
+            month_list.append(plan.date.strftime("%m"))
+            years_list.append(plan.date.strftime("%Y"))
+    month_list = list(dict.fromkeys(month_list))
+    years_list = list(dict.fromkeys(years_list))
+    month_list.sort()
+    years_list.sort()
     return jsonify({
-        "plan_list": iterate_models(plan_list)
+        "month_list": month_list,
+        "years_list": years_list,
+        "month": date.strftime("%m"),
+        "year": date.strftime("%Y"),
+        "days": days_list
     })
 
 
 @app.route(f'{api}/mobile/lesson_plan/<int:plan_id>', methods=['GET', 'POST'])
 @jwt_required()
-def lesson_plan(plan_id):
+def mobile_lesson_plan(plan_id):
     lesson_plan_get = LessonPlan.query.filter(LessonPlan.id == plan_id).first()
     if request.method == "POST":
         lesson_name = get_json_field('lesson_name')
@@ -308,7 +336,7 @@ def lesson_plan(plan_id):
 
 @app.route(f'{api}/mobile/groups_to_observe')
 @jwt_required()
-def groups_to_observe():
+def mobile_groups_to_observe():
     identity = get_jwt_identity()
     user = Users.query.filter(Users.user_id == identity).first()
     current_date = datetime.now()
@@ -325,27 +353,27 @@ def groups_to_observe():
     })
 
 
-@app.route(f'{api}/mobile/teacher_observe/<int:teacher_id>/', defaults={"group_id": None}, methods=['POST', 'GET'])
-@app.route(f'{api}/mobile/teacher_observe/<int:teacher_id>/<int:group_id>', methods=['POST', 'GET'])
-@jwt_required()
-def teacher_observe(teacher_id, group_id):
-    calendar_year, calendar_month, calendar_day = find_calendar_date()
-    identity = get_jwt_identity()
-    user = Users.query.filter_by(user_id=identity).first()
-    if request.method == "POST":
-        if group_id:
-            return handle_post_request(group_id, teacher_id, calendar_day, calendar_year, calendar_month, user)
-        else:
-            year = get_json_field('year')
-            return get_observations_for_year(year, teacher_id)
-    else:
-
-        return handle_get_request(group_id, teacher_id, calendar_year, calendar_month)
+# @app.route(f'{api}/mobile/teacher_observe/<int:teacher_id>/', defaults={"group_id": None}, methods=['POST', 'GET'])
+# @app.route(f'{api}/mobile/teacher_observe/<int:teacher_id>/<int:group_id>', methods=['POST', 'GET'])
+# @jwt_required()
+# def teacher_observe(teacher_id, group_id):
+#     calendar_year, calendar_month, calendar_day = find_calendar_date()
+#     identity = get_jwt_identity()
+#     user = Users.query.filter_by(user_id=identity).first()
+#     if request.method == "POST":
+#         if group_id:
+#             return handle_post_request(group_id, teacher_id, calendar_day, calendar_year, calendar_month, user)
+#         else:
+#             year = get_json_field('year')
+#             return get_observations_for_year(year, teacher_id)
+#     else:
+#
+#         return handle_get_request(group_id, teacher_id, calendar_year, calendar_month)
 
 
 @app.route(f'{api}/mobile/change_student_info/<int:user_id>', methods=['POST'])
 @jwt_required()
-def change_student_info(user_id):
+def mobile_change_student_info(user_id):
     identity = get_jwt_identity()
     user = Users.query.filter(Users.user_id == identity).first()
     json = request.get_json()
@@ -525,7 +553,7 @@ def change_student_info(user_id):
 
 @app.route(f'{api}/mobile/profile/<int:user_id>')
 @jwt_required()
-def profile(user_id):
+def mobile_profile(user_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     user_get = Users.query.filter(Users.id == user_id).first()
     student_get = Students.query.filter(Students.user_id == user_id).first()
@@ -943,7 +971,7 @@ def profile(user_id):
 
 @app.route(f'{api}/mobile/teacher_salary/<int:user_id>/<int:location_id>')
 @jwt_required()
-def teacher_salary(user_id, location_id):
+def mobile_teacher_salary(user_id, location_id):
     """
 
     :param user_id: User table primary key
@@ -1011,7 +1039,7 @@ def teacher_salary(user_id, location_id):
 
 @app.route(f"{api}/mobile/update_photo_profile/<int:user_id>", methods=["POST"])
 @jwt_required()
-def update_photo_profile(user_id):
+def mobile_update_photo_profile(user_id):
     photo = request.files['file']
     app.config['UPLOAD_FOLDER'] = user_photo_folder()
     user = Users.query.filter(Users.id == user_id).first()
@@ -1039,4 +1067,63 @@ def update_photo_profile(user_id):
         "success": True,
         "msg": "Shaxsiy profil yangilandi",
         "src": url
+    })
+
+
+@app.route(f'{api}/mobile/get_lesson_plan', methods=['POST'])
+@jwt_required()
+def mobile_get_lesson_plan():
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    day = get_json_field('day')
+    month = get_json_field('month')
+    year = get_json_field('year')
+    group_id = get_json_field('group_id')
+    date = year + "-" + month + "-" + day
+    date = datetime.strptime(date, "%Y-%m-%d")
+    status = True if calendar_day.date < date else False
+    lesson_plan = LessonPlan.query.filter(LessonPlan.group_id == group_id, LessonPlan.date == date).first()
+    return jsonify({
+        "lesson_plan": lesson_plan.convert_json(),
+        "status": status
+    })
+
+
+@app.route(f'{api}/mobile/change_lesson_plan/<int:plan_id>', methods=['POST'])
+@jwt_required()
+def mobile_change_lesson_plan(plan_id):
+    lesson_plan_get = LessonPlan.query.filter(LessonPlan.id == plan_id).first()
+
+    objective = get_json_field('objective')
+    main_lesson = get_json_field('main_lesson')
+    homework = get_json_field('homework')
+    assessment = get_json_field('assessment')
+    activities = get_json_field('activities')
+    student_id_list = get_json_field("students")
+    resources = get_json_field("resources")
+    lesson_plan_get.objective = objective
+    lesson_plan_get.homework = homework
+    lesson_plan_get.assessment = assessment
+    lesson_plan_get.main_lesson = main_lesson
+    lesson_plan_get.activities = activities
+    lesson_plan_get.resources = resources
+
+    db.session.commit()
+    for student in student_id_list:
+        info = {
+            "comment": student['comment'],
+            "student_id": student['student']['id'],
+            "lesson_plan_id": plan_id
+        }
+        student_add = LessonPlanStudents.query.filter(LessonPlanStudents.lesson_plan_id == plan_id,
+                                                      LessonPlanStudents.student_id == student['student']['id']).first()
+        if not student_add:
+            student_add = LessonPlanStudents(**info)
+            student_add.add()
+        else:
+            student_add.comment = student['comment']
+            db.session.commit()
+    return jsonify({
+        "success": True,
+        "msg": "Darslik rejasi tuzildi",
+        "lesson_plan": lesson_plan_get.convert_json()
     })

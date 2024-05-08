@@ -1,3 +1,5 @@
+import json
+
 from app import app, api, request, db, jsonify, contains_eager, classroom_server
 from backend.functions.filters import old_current_dates
 import requests
@@ -7,10 +9,124 @@ from backend.student.class_model import Student_Functions
 from backend.group.class_model import Group_Functions
 from datetime import datetime
 from .utils import get_students_info, prepare_scores
-from backend.functions.utils import find_calendar_date, update_salary
+from backend.functions.utils import find_calendar_date, update_salary, iterate_models
 from backend.models.models import Users, Attendance, Students, AttendanceDays, Teachers, Groups, Locations, Subjects, \
     StudentCharity, Roles, TeacherBlackSalary
 from datetime import timedelta
+from backend.models.models import CalendarDay, CalendarMonth, CalendarYear
+
+
+@app.route(f'{api}/teacher_statistics_diagram/<int:location_id>',
+           methods=['GET', 'POST'])
+# @jwt_required()
+def teacher_statistics_diagram(location_id):
+    info = request.get_json()['info']
+    teachers = db.session.query(Teachers).join(Teachers.user).options(contains_eager(Teachers.user)).filter(
+        Users.location_id == location_id).all()
+
+    teachers_ratings = []
+
+    for teacher in teachers:
+
+        if info['year_id'] != "all" and info['month_id'] != "all":
+            if info['day_id'] == 'all':
+                teacher_attendances = Attendance.query.filter(Attendance.calendar_year == info["year_id"],
+                                                              Attendance.teacher_id == teacher.id,
+                                                              Attendance.calendar_month == info['month_id']).all()
+                for attendance in teacher_attendances:
+                    info_teacher = {
+                        'teacher': {
+                            'name': teacher.user.name,
+                            'surname': teacher.user.surname,
+                        },
+                        'attendance_percentage': attendance.ball_percentage
+                    }
+                    teachers_ratings.append(info_teacher)
+            else:
+                attendance_days = db.session.query(AttendanceDays).join(AttendanceDays.attendance).options(
+                    contains_eager(AttendanceDays.attendance)).filter(
+                    Attendance.calendar_year == info["year_id"],
+                    Attendance.teacher_id == teacher.id,
+                    Attendance.calendar_month == info[
+                        'month_id']).filter(AttendanceDays.calendar_day == info['day_id']).all()
+                overall_ball = 0
+                result = 0
+                for attendance_day in attendance_days:
+                    if attendance_day.teacher_ball != None:
+                        overall_ball += attendance_day.teacher_ball
+                if overall_ball != 0:
+                    result = overall_ball / len(attendance_days)
+                else:
+                    result = 0
+                info_teacher = {
+                    'teacher': {
+                        'name': teacher.user.name,
+                        'surname': teacher.user.surname,
+                    },
+                    'attendance_percentage': result
+                }
+                teachers_ratings.append(info_teacher)
+        if info['year_id'] != "all" and info['month_id'] == "all":
+            teacher_attendances = Attendance.query.filter(Attendance.calendar_year == info["year_id"],
+                                                          Attendance.teacher_id == teacher.id).all()
+            overall_ball = 0
+            result = 0
+            for teacher_attendance in teacher_attendances:
+                if teacher_attendance.ball_percentage != None:
+                    overall_ball += teacher_attendance.ball_percentage
+            if overall_ball != 0:
+                result = round(overall_ball / len(teacher_attendances))
+            else:
+                result = 0
+            info_teacher = {
+                'teacher': {
+                    'name': teacher.user.name,
+                    'surname': teacher.user.surname,
+                },
+                'attendance_percentage': result
+            }
+            teachers_ratings.append(info_teacher)
+        if info['year_id'] == "all":
+            teacher_attendances = Attendance.query.filter(Attendance.teacher_id == teacher.id).all()
+            overall_ball = 0
+            for teacher_attendance in teacher_attendances:
+                if teacher_attendance.ball_percentage != None:
+                    overall_ball += teacher_attendance.ball_percentage
+            if overall_ball != 0:
+                result = round(overall_ball / len(teacher_attendances))
+            else:
+                result = 0
+            info_teacher = {
+                'teacher': {
+                    'name': teacher.user.name,
+                    'surname': teacher.user.surname,
+                },
+                'attendance_percentage': result
+            }
+            teachers_ratings.append(info_teacher)
+    return jsonify({
+        'teacher': teachers_ratings
+    })
+
+
+@app.route(f'{api}/get_diagram_dates/', defaults={"date": None})
+@app.route(f'{api}/get_diagram_dates/<string:date>/')
+# @jwt_required()
+def get_diagram_dates(date):
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    years = []
+    calendar_years = CalendarYear.query.order_by(CalendarYear.date).all()
+
+    print(date)
+    if date:
+        dt_object1 = datetime.strptime(date, "%Y-%m")
+        calendar_month = CalendarMonth.query.filter(CalendarMonth.date == dt_object1).first()
+    else:
+        calendar_month = calendar_month
+
+    return jsonify({
+        'years': iterate_models(calendar_years),
+    })
 
 
 @app.route(f'{api}/attendance/<int:group_id>', methods=['GET'])
