@@ -43,18 +43,6 @@ def analyze(attendances, teacher, type_rating=None):
         }
 
         teacher_list.append(info)
-    elif type_rating == "deleted_students":
-        for reason in group_reasons:
-            info = {
-                "name": teacher.user.name,
-                "surname": teacher.user.surname,
-                "reason": reason.reason,
-                "percentage": []
-            }
-            for st in attendances:
-                ball += st.percentage
-            info['percentage'] = round(ball / len(attendances)) if len(attendances) != 0 else 0
-            teacher_list.append(info)
     return teacher_list
 
 
