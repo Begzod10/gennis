@@ -74,13 +74,14 @@ class CalendarYear(db.Model):
                                lazy='select')
     black_salary = relationship("TeacherBlackSalary", backref="year", order_by="TeacherBlackSalary.id",
                                 lazy="select")
-    teacher_group_statistics = relationship("TeacherGroupStatistics", backref="year", order_by="TeacherGroupStatistics.id",
-                                    lazy="select")
+    teacher_group_statistics = relationship("TeacherGroupStatistics", backref="year",
+                                            order_by="TeacherGroupStatistics.id",
+                                            lazy="select")
 
     def convert_json(self, entire=False):
         return {
             "id": self.id,
-            "value": self.date.strftime("%Y"),
+            "value": self.date.strftime("%Y")
         }
 
 
@@ -124,14 +125,16 @@ class CalendarMonth(db.Model):
                                lazy='select')
     black_salary = relationship("TeacherBlackSalary", backref="month", order_by="TeacherBlackSalary.id",
                                 lazy="select")
-    teacher_group_statistics = relationship("TeacherGroupStatistics", backref="month", order_by="TeacherGroupStatistics.id",
-                                    lazy="select")
+    teacher_group_statistics = relationship("TeacherGroupStatistics", backref="month",
+                                            order_by="TeacherGroupStatistics.id",
+                                            lazy="select")
 
     def convert_json(self, entire=False):
         return {
             "id": self.id,
             "month": self.date.strftime("%m"),
             "year": self.date.strftime("%Y"),
+            "date": self.date
         }
 
 

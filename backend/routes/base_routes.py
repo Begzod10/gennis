@@ -653,6 +653,7 @@ def profile(user_id):
                             teacher_id=teacher_get.id)
                         teacher_statistics.add()
                     else:
+                        print(result)
                         teacher_statistics.number_students = deleted_students_list
                         teacher_statistics.percentage = result
                         db.session.commit()

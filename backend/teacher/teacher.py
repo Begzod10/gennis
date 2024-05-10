@@ -1,6 +1,6 @@
 import json
 
-from app import app, api, request, db, jsonify, contains_eager, classroom_server
+from app import app, api, request, db, jsonify, contains_eager, classroom_server, or_
 from backend.functions.filters import old_current_dates
 import requests
 from backend.functions.debt_salary_update import salary_debt
@@ -9,15 +9,197 @@ from backend.student.class_model import Student_Functions
 from backend.group.class_model import Group_Functions
 from datetime import datetime
 from .utils import get_students_info, prepare_scores
-from backend.functions.utils import find_calendar_date, update_salary, iterate_models
+from backend.functions.utils import find_calendar_date, update_salary, iterate_models, get_json_field
 from backend.models.models import Users, Attendance, Students, AttendanceDays, Teachers, Groups, Locations, Subjects, \
-    StudentCharity, Roles, TeacherBlackSalary
+    StudentCharity, Roles, TeacherBlackSalary, GroupReason, TeacherObservationDay, DeletedStudents, \
+    TeacherGroupStatistics
 from datetime import timedelta
 from backend.models.models import CalendarDay, CalendarMonth, CalendarYear
 
 
-@app.route(f'{api}/teacher_statistics_diagram/<int:location_id>',
-           methods=['GET', 'POST'])
+def analyze(attendances, teacher, type_rating=None):
+    ball = 0
+    teacher_list = []
+
+    if type_rating == "attendance":
+        for att in attendances:
+            if att.ball_percentage:
+                ball += att.ball_percentage
+        percentage = round(ball / len(attendances)) if ball != 0 else 0
+        info = {
+            "name": teacher.user.name,
+            "surname": teacher.user.surname,
+            "percentage": percentage
+        }
+        teacher_list.append(info)
+    elif type_rating == "observation":
+        for att in attendances:
+            ball += att.average
+        percentage = round(ball / len(attendances)) if ball != 0 else 0
+        info = {
+            "name": teacher.user.name,
+            "surname": teacher.user.surname,
+            "percentage": percentage
+        }
+
+        teacher_list.append(info)
+    elif type_rating == "deleted_students":
+        for reason in group_reasons:
+            info = {
+                "name": teacher.user.name,
+                "surname": teacher.user.surname,
+                "reason": reason.reason,
+                "percentage": []
+            }
+            for st in attendances:
+                ball += st.percentage
+            info['percentage'] = round(ball / len(attendances)) if len(attendances) != 0 else 0
+            teacher_list.append(info)
+    return teacher_list
+
+
+@app.route(f'{api}/statistics_dates', methods=['POST', 'GET'])
+@jwt_required()
+def statistics_dates():
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    calendar_years = CalendarYear.query.order_by(CalendarYear.date).all()
+    if request.method == "GET":
+        calendar_months = CalendarMonth.query.filter(CalendarMonth.year_id == calendar_year.id).order_by(
+            CalendarMonth.date).all()
+        return jsonify({
+            "years_list": iterate_models(calendar_years),
+            "month_list": iterate_models(calendar_months),
+            "current_year": calendar_year.date.strftime("%Y"),
+            "current_month": calendar_month.date
+        })
+    else:
+        year = get_json_field('year') if 'year' in request.get_json() else calendar_year.date
+        calendar_year = CalendarYear.query.filter(CalendarYear.date == datetime.strptime(year, "%Y")).first()
+        calendar_months = CalendarMonth.query.filter(CalendarMonth.year_id == calendar_year.id).order_by(
+            CalendarMonth.date).all()
+        return jsonify({
+            "month_list": iterate_models(calendar_months)
+        })
+
+
+@app.route(f'{api}/teacher_statistics', methods=['POST', "GET"])
+# @jwt_required()
+def teacher_statistics():
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    teachers = Teachers.query.order_by(Teachers.id).all()
+    group_reasons = GroupReason.query.order_by(GroupReason.id).all()
+    teachers_list = []
+    if request.method == "POST":
+        year = get_json_field('year') if 'year' in request.get_json() else calendar_year.date
+        month = get_json_field('month') if 'month' in request.get_json() else None
+        type_rating = get_json_field('type_rating') if 'type_rating' in request.get_json() else None
+
+        if year != "all" and not month:
+            calendar_year = CalendarYear.query.filter(CalendarYear.date == datetime.strptime(year, "%Y")).first()
+            for teacher in teachers:
+                if type_rating == "attendances":
+                    attendances = Attendance.query.filter(Attendance.calendar_year == calendar_year.id,
+                                                          Attendance.teacher_id == teacher.id,
+                                                          Attendance.ball_percentage != None
+                                                          ).all()
+                    teachers_list += analyze(attendances, teacher, type_rating)
+                elif type_rating == "observation":
+                    observations = TeacherObservationDay.query.filter(
+                        TeacherObservationDay.calendar_year == calendar_year.id,
+                        TeacherObservationDay.teacher_id == teacher.id).all()
+                    teachers_list += analyze(observations, teacher, type_rating)
+            if type_rating == "deleted_students":
+                for reason in group_reasons:
+                    del_st_statistics = TeacherGroupStatistics.query.filter(
+                        TeacherGroupStatistics.calendar_year == calendar_year.id,
+                        TeacherGroupStatistics.reason_id == reason.id
+                    ).order_by(
+                        TeacherGroupStatistics.calendar_year).all()
+                    percentage = 0
+                    for st in del_st_statistics:
+                        percentage += st.percentage
+                    info = {
+                        "name": reason.reason,
+                        "percentage": round(percentage / len(del_st_statistics)) if del_st_statistics else 0
+                    }
+                    teachers_list.append(info)
+            return jsonify({
+                "teachers_list": teachers_list
+            })
+        elif year != "all" and month:
+            calendar_year = CalendarYear.query.filter(CalendarYear.date == datetime.strptime(year, "%Y")).first()
+            # date = year + "-" + month
+            calendar_month = CalendarMonth.query.filter(CalendarMonth.date == month).first()
+
+            calendar_months = CalendarMonth.query.filter(CalendarMonth.year_id == calendar_year.id).order_by(
+                CalendarMonth.date).all()
+            for teacher in teachers:
+
+                if type_rating == "attendance":
+                    attendances = Attendance.query.filter(Attendance.calendar_year == calendar_year.id,
+                                                          Attendance.teacher_id == teacher.id,
+                                                          Attendance.calendar_month == calendar_month.id,
+                                                          Attendance.ball_percentage != None
+                                                          ).all()
+
+                    teachers_list += analyze(attendances, teacher, type_rating)
+                elif type_rating == "observation":
+                    observations = TeacherObservationDay.query.filter(
+                        TeacherObservationDay.calendar_year == calendar_year.id,
+                        TeacherObservationDay.calendar_month == calendar_month.id,
+                        TeacherObservationDay.teacher_id == teacher.id).all()
+                    teachers_list += analyze(observations, teacher, type_rating)
+            if type_rating == "deleted_students":
+
+                for reason in group_reasons:
+                    del_st_statistics = TeacherGroupStatistics.query.filter(
+                        TeacherGroupStatistics.calendar_year == calendar_year.id,
+                        TeacherGroupStatistics.calendar_month == calendar_month.id,
+                        TeacherGroupStatistics.reason_id == reason.id
+                    ).order_by(
+                        TeacherGroupStatistics.calendar_year).all()
+                    percentage = 0
+                    for st in del_st_statistics:
+                        percentage += st.percentage
+                    info = {
+                        "name": reason.reason,
+                        "percentage": round(percentage / len(del_st_statistics)) if del_st_statistics else 0
+                    }
+                    teachers_list.append(info)
+            return jsonify({
+                "teachers_list": teachers_list
+            })
+        else:
+            for teacher in teachers:
+                if type_rating == "attendance":
+                    attendances = Attendance.query.filter(Attendance.teacher_id == teacher.id,
+                                                          Attendance.ball_percentage != None
+                                                          ).all()
+                    teachers_list += analyze(attendances, teacher, type_rating)
+                elif type_rating == "observation":
+                    observations = TeacherObservationDay.query.filter(
+                        TeacherObservationDay.teacher_id == teacher.id).all()
+                    teachers_list += analyze(observations, teacher, type_rating)
+            if type_rating == "deleted_students":
+                for reason in group_reasons:
+                    del_st_statistics = TeacherGroupStatistics.query.filter(
+                        TeacherGroupStatistics.reason_id == reason.id
+                    ).order_by(
+                        TeacherGroupStatistics.calendar_year).all()
+                    percentage = 0
+                    for st in del_st_statistics:
+                        percentage += st.percentage
+                    info = {
+                        "name": reason.reason,
+                        "percentage": round(percentage / len(del_st_statistics)) if del_st_statistics else 0
+                    }
+                    teachers_list.append(info)
+            return jsonify({
+                "teachers_list": teachers_list
+            })
+
+
+@app.route(f'{api}/teacher_statistics_diagram/<int:location_id>', methods=['GET', 'POST'])
 # @jwt_required()
 def teacher_statistics_diagram(location_id):
     info = request.get_json()['info']
