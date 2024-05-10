@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import String, Integer, Boolean, Column, ForeignKey, DateTime, or_, and_, desc, func, ARRAY, JSON, \
-    extract, BigInteger, Date
+    extract, Date, BigInteger
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func, functions
@@ -224,6 +224,10 @@ class Locations(db.Model):
     __tablename__ = "locations"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    number = Column(Integer)
+    location = Column(String)
+    link = Column(String)
+    code = Column(Integer)
     users = relationship('Users', backref="location", order_by="Users.id")
     groups = relationship("Groups", backref="location", order_by="Groups.id")
     attendance = relationship("Attendance", backref="location", order_by="Attendance.id")
@@ -240,6 +244,8 @@ class Locations(db.Model):
     calendar_month = Column(Integer, ForeignKey("calendarmonth.id"))
     calendar_year = Column(Integer, ForeignKey("calendaryear.id"))
     overhead_data = relationship('Overhead', backref="location", order_by="Overhead.id")
+    contract_students_data = relationship('Contract_Students_Data', backref="location",
+                                          order_by="Contract_Students_Data.id")
     attendance_days_get = relationship("AttendanceDays", backref="location", order_by="AttendanceDays.id")
     accounting = relationship("AccountingInfo", backref="location", order_by="AccountingInfo.id")
     charity = relationship('StudentCharity', backref="location", order_by="StudentCharity.id")

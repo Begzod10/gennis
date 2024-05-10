@@ -2,6 +2,22 @@ from backend.models.models import Column, Integer, ForeignKey, String, relations
 
 
 
+class Link(db.Model):
+    __tablename__ = "link"
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    link = Column(String)
+    img = Column(String)
+
+    def json(self):
+        info = {
+            'id': self.id,
+            'name': self.name,
+            'link': self.link,
+            'img': self.img,
+        }
+        return info
+
 
 class TeacherData(db.Model):
     __tablename__ = "teacher_data"
@@ -19,7 +35,15 @@ class TeacherData(db.Model):
             'telegram': self.telegram,
             'instagram': self.instagram,
             'facebook': self.facebook,
-            'img': f'{self.img}',
+            'img': self.img,
+        }
+        return info
+
+    def json2(self):
+        info = {
+            'telegram': self.telegram,
+            'instagram': self.instagram,
+            'facebook': self.facebook,
         }
         return info
 
@@ -40,7 +64,7 @@ class StudentCertificate(db.Model):
             'text': self.text,
             'student': self.student.user.name,
             'teacher': self.teacher.user.name,
-            'img': f'{self.img}',
+            'img': self.img,
         }
         return info
 
@@ -51,7 +75,7 @@ class News(db.Model):
     title = Column(String)
     date = Column(Date)
     description = Column(String)
-    links = relationship('Links', backref="news", order_by="Links.id", lazy="select")
+    links = relationship('NewsLink', backref="news", order_by="NewsLink.id", lazy="select")
     images = relationship('NewsImg', backref="news", order_by="NewsImg.id", lazy="select")
 
     def json(self):
@@ -72,8 +96,8 @@ class News(db.Model):
         return info
 
 
-class Links(db.Model):
-    __tablename__ = "links"
+class NewsLink(db.Model):
+    __tablename__ = "news_link"
     id = Column(Integer, primary_key=True)
     name = Column(String)
     link = Column(String)
@@ -97,7 +121,7 @@ class NewsImg(db.Model):
     def json(self):
         info = {
             'id': self.id,
-            'url': f'{self.url}'
+            'url': self.url
         }
         return info
 
@@ -113,7 +137,7 @@ class HomeDesign(db.Model):
         info = {
             'name': self.name,
             'text': self.text,
-            'img': f'{self.img}',
+            'img': self.img
         }
         return info
 
@@ -138,6 +162,7 @@ class Advantages(db.Model):
     id = Column(Integer, primary_key=True)
     __tablename__ = "advantages"
     name = Column(String)
+    text = Column(String)
     img = Column(String)
 
 

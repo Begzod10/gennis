@@ -23,16 +23,32 @@ def user_contract_folder():
     return folder
 
 
+def home_design():
+    folder = "frontend/build/static/home_design"
+    return folder
+
+
+def student_certificate():
+    folder = "frontend/build/static/student_certificate"
+    return folder
+
+
+def link_img():
+    folder = "frontend/build/static/link_img"
+    return folder
+
+
+def teacher_certificate():
+    folder = "frontend/build/static/teacher_certificate"
+    return folder
+
+
 def room_images():
     folder = "frontend/build/static/room"
     return folder
 
 
-def certificate_folder():
-    return "fronted/build/static/certificates"
-
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'svg'}
 
 
 def checkFile(filename):

@@ -6,28 +6,173 @@ from flask_jwt_extended import jwt_required
 
 from app import app, api, jsonify, db, request, secure_filename
 from backend.functions.small_info import advantages_photo_folder, news_photo_folder, checkFile, gallery_folder, \
-    certificate_folder
-from backend.models.models import Advantages, CommentLikes, HomeVideo, HomeDesign, Comments, Users, Links, News, \
-    Gallery, NewsImg, StudentCertificate, Groups, Teachers, TeacherData
+    home_design, student_certificate, teacher_certificate, link_img
+from backend.models.models import Advantages, CommentLikes, HomeVideo, HomeDesign, Comments, Users, NewsLink, News, \
+    Gallery, NewsImg, StudentCertificate, Groups, Teachers, TeacherData, Subjects, Link, Locations
+
+from pprint import pprint
+
+
+@app.route(f'{api}/change_locations/<int:location_id>', methods=['POST'])
+def change_locations(location_id):
+    req = request.get_json()
+    number = req['number']
+    location_name = req['location']
+    link = req['link']
+    location = Locations.query.filter(Locations.id == location_id).first()
+    location.number = number
+    location.location = location_name
+    location.link = link
+    db.session.commit()
+    info = {
+        "id": location.id,
+        "name": location.name,
+        "number": location.number,
+        "location": location.location,
+        "link": location.link,
+    }
+    return jsonify({
+        "msg": "Nigga",
+        'location': info,
+        "success": True,
+    })
+
+
+@app.route(f'{api}/add_advantages', methods=['GET'])
+def add_advantages():
+    list = ['Co-working zone', 'Friendly atmosphere', 'Football games in 3 branches', 'Different interesting events',
+            'Cybersport']
+    for name in list:
+        advantage = Advantages.query.filter(Advantages.name == name).first()
+        if not advantage:
+            add = Advantages(name=name)
+            db.session.add(add)
+            db.session.commit()
+    return jsonify({
+        "success": True,
+    })
+
+
+@app.route(f'{api}/advantage_img/<int:advantage_id>', methods=['POST'])
+def advantage_img(advantage_id):
+    photo = request.files['file']
+
+    app.config['UPLOAD_FOLDER'] = advantages_photo_folder()
+
+    if photo and checkFile(photo.filename):
+        photo_filename = secure_filename(photo.filename)
+        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
+        url = "static" + "/" + "advantages" + "/" + photo_filename
+        advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
+        if os.path.exists(f'frontend/build/{advantage.img}'):
+            os.remove(f'frontend/build/{advantage.img}')
+        Advantages.query.filter(Advantages.id == advantage_id).update({
+            "img": url
+        })
+        db.session.commit()
+
+        return jsonify({
+            "msg": "",
+            "img": advantage.img,
+            "success": True
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "msg": "rasm formati tog'ri kelmadi"
+        })
+
+
+@app.route(f'{api}/change_advantage/<int:advantage_id>', methods=['POST'])
+def change_advantage(advantage_id):
+    advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
+    advantage.name = request.get_json()['name']
+    advantage.text = request.get_json()['text']
+    db.session.commit()
+    info = {
+        'id': advantage.id,
+        'name': advantage.name,
+        'img': advantage.img,
+        'text': advantage.text,
+    }
+    return jsonify({
+        "msg": "",
+        "success": True,
+        "advantage": info
+    })
+
+
+@app.route(f'{api}/add_link', methods=['GET'])
+def add_link():
+    link_names = ['Youtube', 'Telegram', 'Instagram', 'Facebook']
+    for link_name in link_names:
+        link = Link.query.filter(Link.name == link_name).first()
+        if not link:
+            new = Link(name=link_name)
+            db.session.add(new)
+            db.session.commit()
+    return jsonify({
+        'msg': 'GG'
+    })
+
+
+@app.route(f'{api}/change_link', methods=['POST'])
+def change_link():
+    form = json.dumps(dict(request.form))
+    data = json.loads(form)
+    req = eval(data['res'])
+    files = request.files
+    link_id = req['id']
+    name = req['name']
+    link_name = req['link']
+    link = Link.query.filter(Link.id == link_id).first()
+    if 'img' in files:
+        img = request.files['img']
+        link.name = name
+        link.link = link_name
+        app.config['UPLOAD_FOLDER'] = link_img()
+        if checkFile(img.filename):
+            if os.path.exists(f'frontend/build/{link.img}'):
+                os.remove(f'frontend/build/{link.img}')
+            photo_filename = secure_filename(img.filename)
+            img.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
+            url = "static" + "/" + "link_img" + "/" + photo_filename
+            link.img = url
+        db.session.commit()
+    else:
+        link.name = name
+        link.link = link_name
+        db.session.commit()
+    return jsonify({
+        'status': True
+    })
 
 
 @app.route(f'{api}/get_teacher_data/<int:teacher_id>', methods=['GET'])
 def get_teacher_data(teacher_id):
+    teacher = Teachers.query.filter(Teachers.id == teacher_id).first()
     data = TeacherData.query.filter(TeacherData.teacher_id == teacher_id).first()
     list = []
     for item in StudentCertificate.query.filter(StudentCertificate.teacher_id == teacher_id).order_by(
             StudentCertificate.id).all():
         list.append(item.json())
+    teacher_subjects = []
+    for subject in teacher.subject:
+        teacher_subjects.append(subject.name)
     if data:
         return jsonify({
             'data': data.json(),
+            'full_name': teacher.user.name + ' ' + teacher.user.surname,
             'list': list,
+            'subjects': teacher_subjects,
             'status': True
         })
     else:
         return jsonify({
             'status': False,
+            'full_name': teacher.user.name + ' ' + teacher.user.surname,
             'list': list,
+            'subjects': teacher_subjects,
         })
 
 
@@ -48,13 +193,13 @@ def change_teacher_data():
         data.telegram = telegram
         data.instagram = instagram
         data.facebook = facebook
-        app.config['UPLOAD_FOLDER'] = certificate_folder()
+        app.config['UPLOAD_FOLDER'] = teacher_certificate()
         if photo and checkFile(photo.filename):
             if os.path.exists(f'frontend/build/{data.img}'):
                 os.remove(f'frontend/build/{data.img}')
             photo_filename = secure_filename(photo.filename)
             photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-            url = "static" + "/" + "certificates" + "/" + photo_filename
+            url = "static" + "/" + "teacher_certificate" + "/" + photo_filename
             data.img = url
         db.session.commit()
         return jsonify({
@@ -63,11 +208,11 @@ def change_teacher_data():
             "success": True
         })
     else:
-        app.config['UPLOAD_FOLDER'] = certificate_folder()
+        app.config['UPLOAD_FOLDER'] = teacher_certificate()
         if photo and checkFile(photo.filename):
             photo_filename = secure_filename(photo.filename)
             photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-            url = "static" + "/" + "certificates" + "/" + photo_filename
+            url = "static" + "/" + "teacher_certificate" + "/" + photo_filename
             new = TeacherData(teacher_id=teacher_id, text=text, telegram=telegram, instagram=instagram,
                               facebook=facebook, img=url)
             db.session.add(new)
@@ -88,7 +233,6 @@ def change_teacher_data():
 def get_groups(teacher_id):
     teacher = Teachers.query.filter(Teachers.id == teacher_id).first()
     list = []
-    print(teacher.group)
     for group in teacher.group:
         info = {
             'name': group.name,
@@ -104,7 +248,6 @@ def get_groups(teacher_id):
 def get_student_in_group(group_id):
     group = Groups.query.filter(Groups.id == group_id).first()
     list = []
-    print(group.student)
     for student in group.student:
         info = {
             'name': student.user.name,
@@ -128,11 +271,11 @@ def add_student_certificate():
     today = date.today()
     group_id = res['group_id']
     photo = request.files['img']
-    app.config['UPLOAD_FOLDER'] = certificate_folder()
+    app.config['UPLOAD_FOLDER'] = student_certificate()
     if photo and checkFile(photo.filename):
         photo_filename = secure_filename(photo.filename)
         photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-        url = "static" + "/" + "certificates" + "/" + photo_filename
+        url = "static" + "/" + "student_certificate" + "/" + photo_filename
         new = StudentCertificate(teacher_id=teacher_id, group_id=group_id, student_id=student_id, text=text, date=today,
                                  img=url)
         db.session.add(new)
@@ -145,23 +288,91 @@ def add_student_certificate():
 
 @app.route(f'{api}/get_home_info', methods=['GET'])
 def get_home_info():
-    design = HomeDesign.query.order_by(HomeDesign.id).all()
-    for item in design:
-        design = item
-    video = HomeVideo.query.order_by(HomeVideo.id).all()
-    for item in video:
-        video = item
+    design = HomeDesign.query.first()
+    video = HomeVideo.query.first()
+    subjects = Subjects.query.order_by(Subjects.id).all()
+    subject_list = []
+    for subject in subjects:
+        info = {
+            'img': None,
+            'name': subject.name
+        }
+        subject_list.append(info)
+    certificates = StudentCertificate.query.order_by()
+    certificate_list = []
+    for certificate in certificates:
+        info = {
+            'text': certificate.text,
+            'certificate': certificate.img,
+            'student_img': certificate.student.user.photo_profile,
+            'student': certificate.student.user.surname + '' + certificate.student.user.name,
+            'teacher': certificate.teacher.user.surname + '' + certificate.teacher.user.name
+        }
+        certificate_list.append(info)
     today = date.today()
-
     news = News.query.filter(News.date >= today).order_by(News.id).all()
     list = []
     for new in news:
         list.append(new.json())
+
+    teacher_list = []
+    teachers = Teachers.query.order_by(Teachers.id).all()
+    for teacher in teachers:
+        data = TeacherData.query.filter(TeacherData.teacher_id == teacher.id).first()
+        teacher_subjects = []
+        for subject in teacher.subject:
+            teacher_subjects.append(subject.name)
+        if data:
+            info = {
+                'full_name': teacher.user.surname + '' + teacher.user.name,
+                'subjects': teacher_subjects,
+                'id': teacher.id,
+                'teacher_img': teacher.user.photo_profile,
+                'text': data.text,
+                'links': data.json2(),
+            }
+        else:
+            info = {
+                'full_name': teacher.user.surname + '' + teacher.user.name,
+                'subjects': teacher_subjects,
+                'id': teacher.id,
+                'teacher_img': teacher.user.photo_profile,
+                'text': None,
+                'links': None,
+            }
+        teacher_list.append(info)
+    links = []
+    all_links = Link.query.order_by(Link.id).all()
+    for link in all_links:
+        links.append(link.json())
+
+    advantages = Advantages.query.order_by(Advantages.id).all()
+    advantages_list = [{
+        "id": advantage.id,
+        "name": advantage.name,
+        "text": advantage.text,
+        "img": advantage.img
+    } for advantage in advantages]
+
+    locations = Locations.query.order_by(Locations.id).all()
+    locations_list = [{
+        "id": location.id,
+        "name": location.name,
+        "number": location.number,
+        "location": location.location,
+        "link": location.link,
+    } for location in locations]
     if design and video:
         return jsonify({
             'design': design.json(),
             'video': video.json(),
             'news': list,
+            'subjects': subject_list,
+            'teachers': teacher_list,
+            'certificates': certificate_list,
+            'advantages': advantages_list,
+            'locations': locations_list,
+            'links': links,
             "success": True
         })
     else:
@@ -174,20 +385,43 @@ def get_home_info():
 def add_home_design():
     name = eval(request.form.get('name'))
     text = eval(request.form.get('text'))
-    photo = request.files['file']
-    app.config['UPLOAD_FOLDER'] = gallery_folder()
+    if 'file' in request.files:
+        photo = request.files['file']
+    else:
+        photo = False
+    app.config['UPLOAD_FOLDER'] = home_design()
     if photo and checkFile(photo.filename):
         photo_filename = secure_filename(photo.filename)
         photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-        url = "static" + "/" + "gallery" + "/" + photo_filename
-        new_design = HomeDesign(name=name, text=text, img=url)
-        db.session.add(new_design)
-        db.session.commit()
-        return jsonify({
-            "msg": "Nigga",
-            'design': new_design.json(),
-            "success": True
-        })
+        url = "static" + "/" + "home_design" + "/" + photo_filename
+        design = HomeDesign.query.first()
+        if design:
+            if os.path.exists(f'frontend/build/{design.img}'):
+                os.remove(f'frontend/build/{design.img}')
+            design.name = name
+            design.text = text
+            design.img = url
+            db.session.commit()
+        else:
+            new = HomeDesign(name=name, text=text, img=url)
+            db.session.add(new)
+            db.session.commit()
+    else:
+        design = HomeDesign.query.first()
+        if design:
+            design.name = name
+            design.text = text
+            db.session.commit()
+        else:
+            new = HomeDesign(name=name, text=text)
+            db.session.add(new)
+            db.session.commit()
+    design = HomeDesign.query.first()
+    return jsonify({
+        "msg": "Nigga",
+        'design': design.json(),
+        "success": True
+    })
 
 
 @app.route(f'{api}/add_home_video', methods=['POST'])
@@ -195,100 +429,16 @@ def add_home_video():
     req = request.get_json()
     name = req['name']
     text = req['text']
-    video = req['link']
-    new_video = HomeVideo(name=name, text=text, url=video)
-    db.session.add(new_video)
+    video_link = req['link']
+    video = HomeVideo.query.first()
+    video.name = name
+    video.text = text
+    video.url = video_link
     db.session.commit()
     return jsonify({
         "msg": "Nigga",
         "success": True,
-        'video': new_video.json()
-    })
-
-
-@app.route(f'{api}/add_advantages', methods=['POST'])
-@jwt_required()
-def add_advantages():
-    name = request.get_json()['name']
-    add = Advantages(name=name)
-    db.session.add(add)
-    db.session.commit()
-
-    return jsonify({
-        "success": True,
-        "id": add.id
-    })
-
-
-@app.route(f'{api}/home_advantages')
-def home_advantages():
-    advantages = Advantages.query.order_by(Advantages.id).all()
-    advantages_list = [{
-        "id": advantage.id,
-        "name": advantage.name,
-        "img": advantage.img
-    } for advantage in advantages]
-
-    return jsonify({
-        "advantages": advantages_list
-    })
-
-
-@app.route(f'{api}/advantage_img/<int:advantage_id>', methods=['POST'])
-@jwt_required()
-def advantage_img(advantage_id):
-    photo = request.files['file']
-
-    app.config['UPLOAD_FOLDER'] = advantages_photo_folder()
-
-    if photo and checkFile(photo.filename):
-        photo_filename = secure_filename(photo.filename)
-        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-        url = "static" + "/" + "advantages" + "/" + photo_filename
-        advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
-        if os.path.exists(f'frontend/build/{advantage.img}'):
-            os.remove(f'frontend/build/{advantage.img}')
-        Advantages.query.filter(Advantages.id == advantage_id).update({
-            "img": url
-        })
-        db.session.commit()
-
-        return jsonify({
-            "msg": "",
-            "success": True
-        })
-    else:
-        return jsonify({
-            "success": False,
-            "msg": "rasm formati tog'ri kelmadi"
-        })
-
-
-@app.route(f'{api}/change_advantage/<int:advantage_id>', methods=['POST'])
-@jwt_required()
-def change_advantage(advantage_id):
-    Advantages.query.filter(Advantages.id == advantage_id).update({
-        "name": request.get_json()['name']
-    })
-    db.session.commit()
-    return jsonify({
-        "msg": "",
-        "success": True,
-        "id": advantage_id
-    })
-
-
-@app.route(f'{api}/delete_advantage/<int:advantage_id>')
-@jwt_required()
-def delete_advantage(advantage_id):
-    advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
-    if os.path.exists(f'frontend/build/{advantage.img}'):
-        os.remove(f'frontend/build/{advantage.img}')
-    Advantages.query.filter(Advantages.id == advantage_id).delete()
-    db.session.commit()
-    return jsonify({
-        "msg": "",
-        "success": True
+        'video': video.json()
     })
 
 
@@ -378,7 +528,7 @@ def add_news():
     db.session.add(add)
     db.session.commit()
     for link in links:
-        link_base = Links(name=link['type'], link=link['link'], news_id=add.id)
+        link_base = NewsLink(name=link['type'], link=link['link'], news_id=add.id)
         db.session.add(link_base)
         db.session.commit()
     list = []
@@ -393,14 +543,12 @@ def add_news():
     app.config['UPLOAD_FOLDER'] = news_photo_folder()
     for file in list:
         if checkFile(file.filename):
-            print(file)
             img_name = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], img_name))
             url = "static" + "/" + "news" + "/" + img_name
             img = NewsImg(url=url, new_id=add.id)
             db.session.add(img)
             db.session.commit()
-    print(add)
     return jsonify({
         'new': add.json(),
     })
@@ -431,16 +579,16 @@ def change_news(news_id):
     news.date = date
 
     db.session.commit()
-    print(links)
     for link in links:
         if 'link_id' in link:
-            Links.query.filter(Links.id == link['link_id']).update({
+            NewsLink.query.filter(NewsLink.id == link['link_id']).update({
                 "name": link['type'],
                 'link': link['link']
             })
             db.session.commit()
         else:
-            add = Links(name=link['type'], link=link['link'], news_id=news_id)
+            print(link)
+            add = NewsLink(name=link['type'], link=link['link'], news_id=news_id)
             db.session.add(add)
             db.session.commit()
     app.config['UPLOAD_FOLDER'] = news_photo_folder()
@@ -493,9 +641,9 @@ def home_news():
 
 @app.route(f'{api}/delete_news/<int:news_id>')
 def delete_news(news_id):
-    links = Links.query.filter(Links.news_id == news_id).all()
+    links = NewsLink.query.filter(NewsLink.news_id == news_id).all()
     for link in links:
-        Links.query.filter(Links.id == link.id).delete()
+        NewsLink.query.filter(NewsLink.id == link.id).delete()
         db.session.commit()
     news = News.query.filter(News.id == news_id).first()
     if os.path.exists(f'frontend/build{news.img}'):

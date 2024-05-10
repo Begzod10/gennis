@@ -118,6 +118,14 @@ class Contract_Students(db.Model):
     passport_series = Column(String)
 
 
+class Contract_Students_Data(db.Model):
+    __tablename__ = "contract_students_data"
+    id = Column(Integer, primary_key=True)
+    year = Column(DateTime)
+    number = Column(Integer)
+    location_id = Column(Integer, ForeignKey('locations.id'))
+
+
 class Debtor_Reasons(db.Model):
     __tablename__ = "debtor_reasons"
     id = Column(Integer, primary_key=True)

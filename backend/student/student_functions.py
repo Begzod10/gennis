@@ -3,7 +3,7 @@ import os
 from flask_jwt_extended import jwt_required
 from backend.models.models import Students, AttendanceHistoryStudent, DeletedStudents, Users, RegisterDeletedStudents, \
     Contract_Students, BookPayments, StudentPayments, Teachers, Roles, Locations, StudentExcuses, StudentHistoryGroups, \
-    Groups, StudentDebt, PhoneList, or_, StudentDebtComment, GroupReason
+    Groups, StudentDebt, PhoneList, or_, StudentDebtComment, Contract_Students_Data
 from backend.functions.small_info import checkFile, user_contract_folder
 from werkzeug.utils import secure_filename
 from backend.functions.utils import find_calendar_date, update_week
@@ -411,6 +411,7 @@ def create_contract(user_id):
     do = datetime.strftime(do, "%Y-%m-%d")
 
     user = Users.query.filter(Users.id == user_id).first()
+    location_id = user.location_id
     student = Students.query.filter(Students.user_id == user_id).first()
 
     contract = Contract_Students.query.filter(Contract_Students.student_id == student.id).first()
@@ -422,12 +423,23 @@ def create_contract(user_id):
         "contract_word_url": ""
     })
     db.session.commit()
+    this_year = datetime.year
+    contract_data = Contract_Students_Data.query.filter(Contract_Students_Data.location_id == location_id,
+                                                        Contract_Students_Data.year == this_year).first()
     if not contract:
         contract = Contract_Students(student_id=student.id, created_date=ot,
                                      expire_date=do, father_name=fatherName, given_place=givenPlace,
                                      place=place, passport_series=passportSeries, given_time=givenTime)
         db.session.add(contract)
         db.session.commit()
+
+        if not contract_data:
+            new = Contract_Students_Data(year=this_year, number=1, location_id=location_id)
+            db.session.add(new)
+            db.session.commit()
+        else:
+            contract_data.number += 1
+            db.session.commit()
     else:
         Contract_Students.query.filter(Contract_Students.student_id == student.id,
                                        ).update({
@@ -452,7 +464,9 @@ def create_contract(user_id):
     doc = docx.Document('frontend/build/static/contract_folder/contract.docx')
     id = uuid.uuid1()
     user_id = id.hex[0:15]
-    doc.paragraphs[0].runs[0].text = f"SHARTNOMA N{student.id}"
+    number = f'{this_year}/{contract_data.location.code}-{contract_data.number}'
+    print(number)
+    doc.paragraphs[0].runs[0].text = f"SHARTNOMA N{number}"
     doc.paragraphs[
         3].text = f"              Bo`stonliq tumani				                                            {contract.created_date.strftime('%d-%m-%Y')}"
     doc.paragraphs[
