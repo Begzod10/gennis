@@ -15,7 +15,8 @@ from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identi
 from backend.models.models import CourseTypes, Students, Users, Staff, \
     PhoneList, Roles, Group_Room_Week, Locations, Professions, Teachers, Subjects, Week, AccountingInfo, Groups, \
     AttendanceHistoryStudent, PaymentTypes, StudentExcuses, SubjectLevels, EducationLanguage, Contract_Students, \
-    CalendarYear, StaffSalary, DeletedStudents, GroupReason, TeacherGroupStatistics, CalendarMonth, CalendarDay
+    CalendarYear, StaffSalary, DeletedStudents, GroupReason, TeacherGroupStatistics, CalendarMonth, CalendarDay, \
+    Advantages, Link, TeacherData
 from datetime import datetime
 from pprint import pprint
 
@@ -36,6 +37,21 @@ def img_larger(e):
 @app.route('/', methods=['POST', 'GET'])
 def index():
     refreshdatas()
+    list = ['Co-working zone', 'Friendly atmosphere', 'Football games in 3 branches', 'Different interesting events',
+            'Cybersport']
+    for name in list:
+        advantage = Advantages.query.filter(Advantages.name == name).first()
+        if not advantage:
+            add = Advantages(name=name)
+            db.session.add(add)
+            db.session.commit()
+    link_names = ['Youtube', 'Telegram', 'Instagram', 'Facebook']
+    for link_name in link_names:
+        link = Link.query.filter(Link.name == link_name).first()
+        if not link:
+            new = Link(name=link_name)
+            db.session.add(new)
+            db.session.commit()
     return app.send_static_file("index.html")
 
 
@@ -96,17 +112,24 @@ def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     username_sign = Users.query.filter_by(user_id=identity).first()
-    role = Roles.query.filter(Roles.id == username_sign.role_id).first()
+    role = Roles.query.filter(Roles.id == username_sign.role_id).first() if username_sign else {}
+
+    if username_sign.teacher:
+        data = TeacherData.query.filter(TeacherData.teacher_id == username_sign.teacher.id).first()
+    else:
+        data = None
     return jsonify({
         "username": username_sign.username,
         "surname": username_sign.surname.title(),
         "name": username_sign.name.title(),
         "id": username_sign.id,
         "access_token": access_token,
-        "role": role.role,
+        "role": role.role if role else "",
         "profile_photo": username_sign.photo_profile,
         "observer": username_sign.observer,
-        "location_id": username_sign.location_id
+        "location_id": username_sign.location_id,
+        "teacher_info": data.json() if data else {}
+
     })
 
 
@@ -625,6 +648,7 @@ def profile(user_id):
         db.session.commit()
         group_reasons = GroupReason.query.order_by(GroupReason.id).all()
         month_list = CalendarMonth.query.order_by(CalendarMonth.date).all()
+
         for month in month_list:
             for reason in group_reasons:
                 deleted_students_total = DeletedStudents.query.filter(
@@ -641,19 +665,19 @@ def profile(user_id):
                     teacher_statistics = TeacherGroupStatistics.query.filter(
                         TeacherGroupStatistics.reason_id == reason.id,
                         TeacherGroupStatistics.calendar_month == month.id,
-                        TeacherGroupStatistics.calendar_year == calendar_year.id,
+                        TeacherGroupStatistics.calendar_year == month.year_id,
                         TeacherGroupStatistics.teacher_id == teacher_get.id).first()
                     if not teacher_statistics:
                         teacher_statistics = TeacherGroupStatistics(
                             reason_id=reason.id,
                             calendar_month=month.id,
-                            calendar_year=calendar_year.id,
+                            calendar_year=month.year_id,
                             percentage=result,
                             number_students=deleted_students_list,
                             teacher_id=teacher_get.id)
                         teacher_statistics.add()
                     else:
-                        print(result)
+
                         teacher_statistics.number_students = deleted_students_list
                         teacher_statistics.percentage = result
                         db.session.commit()

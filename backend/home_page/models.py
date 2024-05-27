@@ -1,7 +1,6 @@
 from backend.models.models import Column, Integer, ForeignKey, String, relationship, db, Date
 
 
-
 class Link(db.Model):
     __tablename__ = "link"
     id = Column(Integer, primary_key=True)
@@ -35,7 +34,7 @@ class TeacherData(db.Model):
             'telegram': self.telegram,
             'instagram': self.instagram,
             'facebook': self.facebook,
-            'img': self.img,
+            'certificate': self.img,
         }
         return info
 
@@ -62,8 +61,13 @@ class StudentCertificate(db.Model):
         info = {
             'id': self.id,
             'text': self.text,
-            'student': self.student.user.name,
-            'teacher': self.teacher.user.name,
+            'student_name': self.student.user.name,
+            'student_surname': self.student.user.surname,
+            'teacher_name': self.teacher.user.name,
+            'teacher_surname': self.teacher.user.surname,
+            'group_id': self.group_id,
+            'student_id': self.student.user.id,
+            'teacher_id': self.teacher.user.id,
             'img': self.img,
         }
         return info

@@ -28,8 +28,8 @@ def home_design():
     return folder
 
 
-def student_certificate():
-    folder = "frontend/build/static/student_certificate"
+def certificate():
+    folder = "frontend/build/static/certificates"
     return folder
 
 

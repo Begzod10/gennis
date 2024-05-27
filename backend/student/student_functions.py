@@ -48,9 +48,9 @@ def check_student_debt():
             'balance': debt.student.user.balance,
             'comments': []
         }
-        print(debt.student_debt_comments)
+
         for student_debt_comment in debt.student_debt_comments:
-            info['comments'].append(student_debt_comment.json())
+            info['comments'].append(student_debt_comment.convert_json())
         red_debts.append(info)
     yellow_debts = []
     all_yellow_debt = db.session.query(StudentDebt).join(StudentDebt.student).options(
@@ -71,7 +71,7 @@ def check_student_debt():
             'comments': []
         }
         for student_debt_comment in debt.student_debt_comments:
-            info['comments'].append(student_debt_comment.json())
+            info['comments'].append(student_debt_comment.convert_json())
         yellow_debts.append(info)
     return red_debts, yellow_debts
 
@@ -423,9 +423,9 @@ def create_contract(user_id):
         "contract_word_url": ""
     })
     db.session.commit()
-    this_year = datetime.year
+
     contract_data = Contract_Students_Data.query.filter(Contract_Students_Data.location_id == location_id,
-                                                        Contract_Students_Data.year == this_year).first()
+                                                        Contract_Students_Data.year == calendar_year.date).first()
     if not contract:
         contract = Contract_Students(student_id=student.id, created_date=ot,
                                      expire_date=do, father_name=fatherName, given_place=givenPlace,
@@ -434,7 +434,7 @@ def create_contract(user_id):
         db.session.commit()
 
         if not contract_data:
-            new = Contract_Students_Data(year=this_year, number=1, location_id=location_id)
+            new = Contract_Students_Data(year=calendar_year.date, number=1, location_id=location_id)
             db.session.add(new)
             db.session.commit()
         else:
@@ -464,8 +464,8 @@ def create_contract(user_id):
     doc = docx.Document('frontend/build/static/contract_folder/contract.docx')
     id = uuid.uuid1()
     user_id = id.hex[0:15]
-    number = f'{this_year}/{contract_data.location.code}-{contract_data.number}'
-    print(number)
+    # number = f'{calendar_year.date.strftime("%Y")}/{contract_data.location.code}-{contract_data.number}'
+    number = f'{calendar_year.date.strftime("%Y")}/{contract_data.number}'
     doc.paragraphs[0].runs[0].text = f"SHARTNOMA N{number}"
     doc.paragraphs[
         3].text = f"              Bo`stonliq tumani				                                            {contract.created_date.strftime('%d-%m-%Y')}"

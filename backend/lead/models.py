@@ -62,9 +62,16 @@ class Lead(db.Model):
             "deleted": self.deleted,
             "comment": self.comment,
             "status": ['green', 'yellow', 'red'][index],
-            "info": self.infos.convert_json() if self.infos else ""
+            "info": self.infos.convert_json() if self.infos else "",
+            "subjects": [subject.convert_json() for subject in self.subject]
         }
 
     def add(self):
         db.session.add(self)
         db.session.commit()
+
+
+db.Table('lead_subject',
+         db.Column('lead_id', db.Integer, db.ForeignKey('lead.id')),
+         db.Column('subject_id', db.Integer, db.ForeignKey('subjects.id'))
+         )

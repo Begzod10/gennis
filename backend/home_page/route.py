@@ -4,56 +4,43 @@ from datetime import date
 
 from flask_jwt_extended import jwt_required
 
-from app import app, api, jsonify, db, request, secure_filename
+from app import app, api, jsonify, db, request, secure_filename, classroom_server
 from backend.functions.small_info import advantages_photo_folder, news_photo_folder, checkFile, gallery_folder, \
-    home_design, student_certificate, teacher_certificate, link_img
+    home_design, teacher_certificate, link_img
 from backend.models.models import Advantages, CommentLikes, HomeVideo, HomeDesign, Comments, Users, NewsLink, News, \
     Gallery, NewsImg, StudentCertificate, Groups, Teachers, TeacherData, Subjects, Link, Locations
-
+import requests
 from pprint import pprint
 
 
 @app.route(f'{api}/change_locations/<int:location_id>', methods=['POST'])
+# @jwt_required()
 def change_locations(location_id):
     req = request.get_json()
     number = req['number']
     location_name = req['location']
     link = req['link']
     location = Locations.query.filter(Locations.id == location_id).first()
-    location.number = number
+    location.number_location = number
     location.location = location_name
     location.link = link
     db.session.commit()
     info = {
         "id": location.id,
         "name": location.name,
-        "number": location.number,
+        "number": location.number_location,
         "location": location.location,
         "link": location.link,
     }
     return jsonify({
-        "msg": "Nigga",
+        "msg": "Ma'lumotlar o'zgartirildi",
         'location': info,
         "success": True,
     })
 
 
-@app.route(f'{api}/add_advantages', methods=['GET'])
-def add_advantages():
-    list = ['Co-working zone', 'Friendly atmosphere', 'Football games in 3 branches', 'Different interesting events',
-            'Cybersport']
-    for name in list:
-        advantage = Advantages.query.filter(Advantages.name == name).first()
-        if not advantage:
-            add = Advantages(name=name)
-            db.session.add(add)
-            db.session.commit()
-    return jsonify({
-        "success": True,
-    })
-
-
 @app.route(f'{api}/advantage_img/<int:advantage_id>', methods=['POST'])
+@jwt_required()
 def advantage_img(advantage_id):
     photo = request.files['file']
 
@@ -72,7 +59,7 @@ def advantage_img(advantage_id):
         db.session.commit()
 
         return jsonify({
-            "msg": "",
+            "msg": "Ma'lumotlar o'zgartirildi",
             "img": advantage.img,
             "success": True
         })
@@ -84,6 +71,7 @@ def advantage_img(advantage_id):
 
 
 @app.route(f'{api}/change_advantage/<int:advantage_id>', methods=['POST'])
+@jwt_required()
 def change_advantage(advantage_id):
     advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
     advantage.name = request.get_json()['name']
@@ -96,27 +84,14 @@ def change_advantage(advantage_id):
         'text': advantage.text,
     }
     return jsonify({
-        "msg": "",
+        "msg": "Ma'lumotlar o'zgartirildi",
         "success": True,
         "advantage": info
     })
 
 
-@app.route(f'{api}/add_link', methods=['GET'])
-def add_link():
-    link_names = ['Youtube', 'Telegram', 'Instagram', 'Facebook']
-    for link_name in link_names:
-        link = Link.query.filter(Link.name == link_name).first()
-        if not link:
-            new = Link(name=link_name)
-            db.session.add(new)
-            db.session.commit()
-    return jsonify({
-        'msg': 'GG'
-    })
-
-
 @app.route(f'{api}/change_link', methods=['POST'])
+@jwt_required()
 def change_link():
     form = json.dumps(dict(request.form))
     data = json.loads(form)
@@ -148,103 +123,8 @@ def change_link():
     })
 
 
-@app.route(f'{api}/get_teacher_data/<int:teacher_id>', methods=['GET'])
-def get_teacher_data(teacher_id):
-    teacher = Teachers.query.filter(Teachers.id == teacher_id).first()
-    data = TeacherData.query.filter(TeacherData.teacher_id == teacher_id).first()
-    list = []
-    for item in StudentCertificate.query.filter(StudentCertificate.teacher_id == teacher_id).order_by(
-            StudentCertificate.id).all():
-        list.append(item.json())
-    teacher_subjects = []
-    for subject in teacher.subject:
-        teacher_subjects.append(subject.name)
-    if data:
-        return jsonify({
-            'data': data.json(),
-            'full_name': teacher.user.name + ' ' + teacher.user.surname,
-            'list': list,
-            'subjects': teacher_subjects,
-            'status': True
-        })
-    else:
-        return jsonify({
-            'status': False,
-            'full_name': teacher.user.name + ' ' + teacher.user.surname,
-            'list': list,
-            'subjects': teacher_subjects,
-        })
-
-
-@app.route(f'{api}/change_teacher_data', methods=['POST'])
-def change_teacher_data():
-    form = json.dumps(dict(request.form))
-    data = json.loads(form)
-    req = eval(data['res'])
-    photo = request.files['img']
-    teacher_id = req['teacher_id']
-    text = req['text']
-    telegram = req['telegram']
-    instagram = req['instagram']
-    facebook = req['facebook']
-    data = TeacherData.query.filter(TeacherData.teacher_id == teacher_id).first()
-    if data:
-        data.text = text
-        data.telegram = telegram
-        data.instagram = instagram
-        data.facebook = facebook
-        app.config['UPLOAD_FOLDER'] = teacher_certificate()
-        if photo and checkFile(photo.filename):
-            if os.path.exists(f'frontend/build/{data.img}'):
-                os.remove(f'frontend/build/{data.img}')
-            photo_filename = secure_filename(photo.filename)
-            photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-            url = "static" + "/" + "teacher_certificate" + "/" + photo_filename
-            data.img = url
-        db.session.commit()
-        return jsonify({
-            "msg": "Nigga",
-            'data': data.json(),
-            "success": True
-        })
-    else:
-        app.config['UPLOAD_FOLDER'] = teacher_certificate()
-        if photo and checkFile(photo.filename):
-            photo_filename = secure_filename(photo.filename)
-            photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-            url = "static" + "/" + "teacher_certificate" + "/" + photo_filename
-            new = TeacherData(teacher_id=teacher_id, text=text, telegram=telegram, instagram=instagram,
-                              facebook=facebook, img=url)
-            db.session.add(new)
-            db.session.commit()
-        else:
-            new = TeacherData(teacher_id=teacher_id, text=text, telegram=telegram, instagram=instagram,
-                              facebook=facebook)
-            db.session.add(new)
-            db.session.commit()
-        return jsonify({
-            "msg": "Nigga",
-            'data': new.json(),
-            "success": True
-        })
-
-
-@app.route(f'{api}/get_groups/<int:teacher_id>', methods=['GET'])
-def get_groups(teacher_id):
-    teacher = Teachers.query.filter(Teachers.id == teacher_id).first()
-    list = []
-    for group in teacher.group:
-        info = {
-            'name': group.name,
-            'id': group.id
-        }
-        list.append(info)
-    return jsonify({
-        'groups': list,
-    })
-
-
 @app.route(f'{api}/get_student_in_group/<int:group_id>', methods=['GET'])
+@jwt_required()
 def get_student_in_group(group_id):
     group = Groups.query.filter(Groups.id == group_id).first()
     list = []
@@ -260,34 +140,12 @@ def get_student_in_group(group_id):
     })
 
 
-@app.route(f'{api}/add_student_certificate', methods=['POST'])
-def add_student_certificate():
-    form = json.dumps(dict(request.form))
-    data = json.loads(form)
-    res = eval(data['res'])
-    text = res.get('text')
-    teacher_id = res['teacher_id']
-    student_id = res['student_id']
-    today = date.today()
-    group_id = res['group_id']
-    photo = request.files['img']
-    app.config['UPLOAD_FOLDER'] = student_certificate()
-    if photo and checkFile(photo.filename):
-        photo_filename = secure_filename(photo.filename)
-        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
-        url = "static" + "/" + "student_certificate" + "/" + photo_filename
-        new = StudentCertificate(teacher_id=teacher_id, group_id=group_id, student_id=student_id, text=text, date=today,
-                                 img=url)
-        db.session.add(new)
-        db.session.commit()
-        return jsonify({
-            "msg": "Nigga",
-            "success": True
-        })
-
-
 @app.route(f'{api}/get_home_info', methods=['GET'])
 def get_home_info():
+    response = requests.get(f"{classroom_server}/api/classroom_subjects", headers={
+        'Content-Type': 'application/json'
+    })
+
     design = HomeDesign.query.first()
     video = HomeVideo.query.first()
     subjects = Subjects.query.order_by(Subjects.id).all()
@@ -305,18 +163,18 @@ def get_home_info():
             'text': certificate.text,
             'certificate': certificate.img,
             'student_img': certificate.student.user.photo_profile,
-            'student': certificate.student.user.surname + '' + certificate.student.user.name,
-            'teacher': certificate.teacher.user.surname + '' + certificate.teacher.user.name
+            'student': certificate.student.user.surname + ' ' + certificate.student.user.name,
+            'teacher': certificate.teacher.user.surname + ' ' + certificate.teacher.user.name
         }
         certificate_list.append(info)
     today = date.today()
     news = News.query.filter(News.date >= today).order_by(News.id).all()
     list = []
     for new in news:
-        list.append(new.json())
+        list.append(new.convert_json())
 
     teacher_list = []
-    teachers = Teachers.query.order_by(Teachers.id).all()
+    teachers = Teachers.query.filter(Teachers.deleted == None).order_by(Teachers.id).all()
     for teacher in teachers:
         data = TeacherData.query.filter(TeacherData.teacher_id == teacher.id).first()
         teacher_subjects = []
@@ -324,7 +182,7 @@ def get_home_info():
             teacher_subjects.append(subject.name)
         if data:
             info = {
-                'full_name': teacher.user.surname + '' + teacher.user.name,
+                'full_name': teacher.user.surname + ' ' + teacher.user.name,
                 'subjects': teacher_subjects,
                 'id': teacher.id,
                 'teacher_img': teacher.user.photo_profile,
@@ -333,7 +191,7 @@ def get_home_info():
             }
         else:
             info = {
-                'full_name': teacher.user.surname + '' + teacher.user.name,
+                'full_name': teacher.user.surname + ' ' + teacher.user.name,
                 'subjects': teacher_subjects,
                 'id': teacher.id,
                 'teacher_img': teacher.user.photo_profile,
@@ -344,7 +202,7 @@ def get_home_info():
     links = []
     all_links = Link.query.order_by(Link.id).all()
     for link in all_links:
-        links.append(link.json())
+        links.append(link.convert_json())
 
     advantages = Advantages.query.order_by(Advantages.id).all()
     advantages_list = [{
@@ -358,16 +216,17 @@ def get_home_info():
     locations_list = [{
         "id": location.id,
         "name": location.name,
-        "number": location.number,
+        "number": location.number_location,
         "location": location.location,
         "link": location.link,
     } for location in locations]
-    if design and video:
-        return jsonify({
-            'design': design.json(),
-            'video': video.json(),
+
+
+    return jsonify({
+            'design': design.convert_json() if design else {},
+            'video': video.convert_json() if video else {},
             'news': list,
-            'subjects': subject_list,
+            'subjects': response.json()['subjects'],
             'teachers': teacher_list,
             'certificates': certificate_list,
             'advantages': advantages_list,
@@ -375,10 +234,7 @@ def get_home_info():
             'links': links,
             "success": True
         })
-    else:
-        return jsonify({
-            "success": False
-        })
+
 
 
 @app.route(f'{api}/add_home_design', methods=['POST'])
@@ -419,7 +275,7 @@ def add_home_design():
     design = HomeDesign.query.first()
     return jsonify({
         "msg": "Nigga",
-        'design': design.json(),
+        'design': design.convert_json(),
         "success": True
     })
 
@@ -438,7 +294,7 @@ def add_home_video():
     return jsonify({
         "msg": "Nigga",
         "success": True,
-        'video': video.json()
+        'video': video.convert_json()
     })
 
 
@@ -587,7 +443,6 @@ def change_news(news_id):
             })
             db.session.commit()
         else:
-            print(link)
             add = NewsLink(name=link['type'], link=link['link'], news_id=news_id)
             db.session.add(add)
             db.session.commit()
@@ -610,7 +465,7 @@ def change_news(news_id):
     return jsonify({
         'msg': "Yangilik o'zgartirildi",
         'success': True,
-        "news": news.json()
+        "news": news.convert_json()
     })
 
 

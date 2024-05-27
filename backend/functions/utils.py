@@ -544,9 +544,9 @@ def remove_items_create_group(list_block):
     return filtered_teachers
 
 
-def check_exist_id():
+def check_exist_id(user_id=None):
     id = uuid.uuid1()
-    user_id = id.hex[0:35]
+    user_id = id.hex[0:35] if not user_id else user_id
     exist_user = Users.query.filter(Users.user_id == user_id).first()
     while exist_user:
         id = uuid.uuid1()

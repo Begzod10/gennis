@@ -14,7 +14,7 @@ app.config.from_object('backend.models.config')
 db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
-classroom_server = "http://192.168.1.110:5001"
+classroom_server = "http://192.168.1.112:5001"
 # classroom_server = "https://classroom.gennis.uz/"
 telegram_bot_server = "http://127.0.0.1:5000"
 
@@ -49,6 +49,7 @@ from backend.teacher.teacher_delete import *
 from backend.teacher.teacher import *
 from backend.teacher.lesson_plan import *
 from backend.teacher.observation import *
+from backend.teacher.teacher_home_page import *
 
 # group
 from backend.group.create_group import *
@@ -80,7 +81,6 @@ from backend.lead.views import *
 
 # mobile
 from backend.mobile.views import *
-
 
 # teacher observation, attendance, teacher_group_statistics
 if __name__ == '__main__':

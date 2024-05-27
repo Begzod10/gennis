@@ -637,7 +637,7 @@ def old_current_dates(group_id=0):
     old_days.sort()
     if group_id != 0:
         day_list = weekday_from_date(day_list, current_month, current_year, week_list)
-    if current_day > 8:
+    if current_day > 18:
         data = [
             {
                 "name": calendar_month.date.strftime("%h"),
@@ -679,7 +679,6 @@ def update_lesson_plan(group_id):
     current_day2 += 5
     for day in plan_days:
         if current_day2 >= day:
-            print(current_day2)
             date_get = str(current_year) + "-" + str(current_month) + "-" + str(day)
             date_get = datetime.strptime(date_get, "%Y-%m-%d")
             exist = LessonPlan.query.filter(LessonPlan.date == date_get, LessonPlan.group_id == group_id,

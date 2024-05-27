@@ -76,7 +76,7 @@ def observe_info():
         "observations": iterate_models(observations),
         "options": iterate_models(options)
     })
-    pass
+
 
 
 @app.route(f'{api}/groups_to_observe')
@@ -152,7 +152,6 @@ def teacher_observe(group_id):
         db.session.commit()
         return jsonify({
             "msg": "Teacher has been observed",
-
             "success": True
         })
 
@@ -212,7 +211,7 @@ def observed_group(group_id, date):
     years_list = list(dict.fromkeys(years_list))
     month_list.sort()
     years_list.sort()
-    print(teacher_observation_all)
+
     return jsonify({
         "month_list": month_list,
         "years_list": years_list,
@@ -229,9 +228,6 @@ def observed_group_info(group_id):
     day = get_json_field('day')
     month = get_json_field('month')
     year = get_json_field('year')
-    print(day)
-    print(month)
-    print(year)
     date = datetime.strptime(year + "-" + month + "-" + day, "%Y-%m-%d")
     calendar_day = CalendarDay.query.filter(CalendarDay.date == date).first()
     observation_list = []
@@ -249,8 +245,6 @@ def observed_group_info(group_id):
         observer['name'] = teacher_observation_day.user.name if teacher_observation_day else ""
         observer['surname'] = teacher_observation_day.user.surname if teacher_observation_day else ""
         for item in observation_infos:
-            print("info",item.id)
-            print("day",teacher_observation_day.id)
             teacher_observations = TeacherObservation.query.filter(
                 TeacherObservation.observation_id == teacher_observation_day.id,
                 TeacherObservation.observation_info_id == item.id
@@ -273,7 +267,7 @@ def observed_group_info(group_id):
 
                 })
             observation_list.append(info)
-        pprint(observation_list)
+
     return jsonify({
         "info": observation_list,
         "observation_options": iterate_models(observation_options),
