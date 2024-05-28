@@ -1,6 +1,6 @@
 import json
-
-from app import app, api, request, db, jsonify, contains_eager, classroom_server, or_
+import os
+from app import app, api, request, db, jsonify, contains_eager, classroom_server, or_, migrate
 from backend.functions.filters import old_current_dates
 import requests
 from backend.functions.debt_salary_update import salary_debt
@@ -15,6 +15,8 @@ from backend.models.models import Users, Attendance, Students, AttendanceDays, T
     TeacherGroupStatistics
 from datetime import timedelta
 from backend.models.models import CalendarDay, CalendarMonth, CalendarYear
+
+
 
 
 def analyze(attendances, teacher, type_rating=None):
@@ -692,3 +694,19 @@ def get_deletedTeachers_location(location_id):
     } for teacher in teachers]
 
     return jsonify({"teachers": list_teachers})
+
+
+class Test(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+
+@app.route('/test_model', methods=["GET", "POST"])
+# @jwt_required()
+def test_model():
+
+    return jsonify({"teachers": "True"})

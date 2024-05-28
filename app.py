@@ -26,6 +26,7 @@ from backend.account.payment import *
 from backend.account.account import *
 from backend.account.overhead_capital import *
 from backend.account.salary import *
+from backend.account.test_acc import *
 
 # functions folder
 from backend.functions.checks import *
@@ -82,6 +83,6 @@ from backend.lead.views import *
 from backend.mobile.views import *
 
 
-# teacher observation, attendance, teacher_group_statistics 22222
+# teacher observation, attendance, teacher_group_statistics
 if __name__ == '__main__':
     app.run()
