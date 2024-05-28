@@ -37,21 +37,21 @@ def img_larger(e):
 @app.route('/', methods=['POST', 'GET'])
 def index():
     refreshdatas()
-    list = ['Co-working zone', 'Friendly atmosphere', 'Football games in 3 branches', 'Different interesting events',
-            'Cybersport']
-    for name in list:
-        advantage = Advantages.query.filter(Advantages.name == name).first()
-        if not advantage:
-            add = Advantages(name=name)
-            db.session.add(add)
-            db.session.commit()
-    link_names = ['Youtube', 'Telegram', 'Instagram', 'Facebook']
-    for link_name in link_names:
-        link = Link.query.filter(Link.name == link_name).first()
-        if not link:
-            new = Link(name=link_name)
-            db.session.add(new)
-            db.session.commit()
+    # list = ['Co-working zone', 'Friendly atmosphere', 'Football games in 3 branches', 'Different interesting events',
+    #         'Cybersport']
+    # for name in list:
+    #     advantage = Advantages.query.filter(Advantages.name == name).first()
+    #     if not advantage:
+    #         add = Advantages(name=name)
+    #         db.session.add(add)
+    #         db.session.commit()
+    # link_names = ['Youtube', 'Telegram', 'Instagram', 'Facebook']
+    # for link_name in link_names:
+    #     link = Link.query.filter(Link.name == link_name).first()
+    #     if not link:
+    #         new = Link(name=link_name)
+    #         db.session.add(new)
+    #         db.session.commit()
     return app.send_static_file("index.html")
 
 

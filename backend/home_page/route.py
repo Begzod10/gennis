@@ -42,7 +42,10 @@ def change_locations(location_id):
 @app.route(f'{api}/advantage_img/<int:advantage_id>', methods=['POST'])
 @jwt_required()
 def advantage_img(advantage_id):
-    photo = request.files['file']
+    if 'file' in request.files:
+        photo = request.files['file']
+    else:
+        photo = None
 
     app.config['UPLOAD_FOLDER'] = advantages_photo_folder()
 
@@ -76,6 +79,7 @@ def change_advantage(advantage_id):
     advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
     advantage.name = request.get_json()['name']
     advantage.text = request.get_json()['text']
+
     db.session.commit()
     info = {
         'id': advantage.id,
@@ -220,27 +224,26 @@ def get_home_info():
         "location": location.location,
         "link": location.link,
     } for location in locations]
-
-
     return jsonify({
-            'design': design.convert_json() if design else {},
-            'video': video.convert_json() if video else {},
-            'news': list,
-            'subjects': response.json()['subjects'],
-            'teachers': teacher_list,
-            'certificates': certificate_list,
-            'advantages': advantages_list,
-            'locations': locations_list,
-            'links': links,
-            "success": True
-        })
-
+        'design': design.convert_json() if design else {},
+        'video': video.convert_json() if video else {},
+        'news': list,
+        'subjects': response.json()['subjects'],
+        'teachers': teacher_list,
+        'certificates': certificate_list,
+        'advantages': advantages_list,
+        'locations': locations_list,
+        'links': links,
+        "success": True
+    })
 
 
 @app.route(f'{api}/add_home_design', methods=['POST'])
 def add_home_design():
-    name = eval(request.form.get('name'))
-    text = eval(request.form.get('text'))
+
+    name = request.form.get('name')
+    text = request.form.get('text')
+
     if 'file' in request.files:
         photo = request.files['file']
     else:
@@ -286,7 +289,12 @@ def add_home_video():
     name = req['name']
     text = req['text']
     video_link = req['link']
+
     video = HomeVideo.query.first()
+    if not video:
+        video = HomeVideo(name=name, text=text, url=video_link)
+        db.session.add(video)
+        db.session.commit()
     video.name = name
     video.text = text
     video.url = video_link
@@ -406,7 +414,7 @@ def add_news():
             db.session.add(img)
             db.session.commit()
     return jsonify({
-        'new': add.json(),
+        'new': add.convert_json(),
     })
 
 
@@ -454,14 +462,18 @@ def change_news(news_id):
     for id in new_list:
         NewsImg.query.filter(NewsImg.id == id).delete()
         db.session.commit()
+
     for file in list:
         if checkFile(file.filename):
             img_name = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], img_name))
             url = "static" + "/" + "news" + "/" + img_name
-            img = NewsImg(url=url, new_id=news.id)
-            db.session.add(img)
-            db.session.commit()
+            exist_img = NewsImg.query.filter(NewsImg.new_id == news_id, NewsImg.url == url).first()
+
+            if not exist_img:
+                img = NewsImg(url=url, new_id=news.id)
+                db.session.add(img)
+                db.session.commit()
     return jsonify({
         'msg': "Yangilik o'zgartirildi",
         'success': True,
