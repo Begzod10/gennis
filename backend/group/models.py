@@ -48,6 +48,7 @@ class Groups(db.Model):
     book_order = relationship("BookOrder", backref="group", order_by="BookOrder.id", lazy="select")
     observation = relationship("TeacherObservationDay", backref="group", order_by="TeacherObservationDay.id",
                                lazy='select')
+    test = relationship("GroupTest", backref="group", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         if not entire:
@@ -188,6 +189,18 @@ class AttendanceDays(db.Model):
                 "surname": self.student.user.surname
             }
         }
+
+
+class GroupTest(db.Model):
+    __tablename__ = "group_test"
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    group_id = Column(Integer, ForeignKey('group.id'))
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    level_id = Column(Integer, ForeignKey('subject_level.id'))
+    calendar_year = Column(Integer, ForeignKey('year.id'))
+    calendar_month = Column(Integer, ForeignKey('month.id'))
+    calendar_day = Column(Integer, ForeignKey('day.id'))
 
 # class BlackBalance(db.Model):
 #     __tablename__ = "black_balance"

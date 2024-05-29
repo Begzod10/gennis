@@ -261,7 +261,7 @@ def make_attendance_classroom():
         ball = 5
         if int(day) < int(current_day):
             late_days = int(current_day) - int(day)
-            print(late_days)
+
             ball -= late_days
             if ball < 0:
                 ball = 0
@@ -387,6 +387,10 @@ def get_group_datas(group_id):
     access_token = create_access_token(identity=identity)
     students = Students.query.join(Students.group).filter(Groups.id == group_id).all()
     users = Users.query.filter(Users.id.in_([user.user.id for user in students])).all()
+    # for user in users:
+    #     user_id = check_exist_id(user.user_id)
+    #     user.user_id = user_id
+    #     db.session.commit()
     return jsonify({
         "users": iterate_models(users),
         "access_token": access_token
@@ -424,7 +428,6 @@ def update_user(user_id):
 @app.route(f'/api/get_datas', methods=['POST'])
 def get_datas():
     type_info = request.get_json()['type']
-    # print(True)
     if type_info == "subject":
         response = request.get_json()['subject']
         for res in response:
@@ -435,6 +438,7 @@ def get_datas():
                 get_subject = Subjects(name=res['name'], ball_number=2, classroom_id=res['id'])
                 get_subject.add()
             else:
+
                 get_subject.disabled = res['disabled']
                 get_subject.classroom_id = res['id']
                 get_subject.name = res['name']

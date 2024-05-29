@@ -1,7 +1,7 @@
 from app import app, request, jsonify
 from backend.functions.utils import api, find_calendar_date, get_json_field, desc, CalendarMonth, AccountingPeriod, \
-    refreshdatas, iterate_models, Users
-from backend.models.models import db
+    refreshdatas, iterate_models
+from backend.models.models import db, Subjects
 from .models import Lead, LeadInfos
 from datetime import datetime
 from flask_jwt_extended import jwt_required
@@ -15,6 +15,9 @@ def register_lead():
     name = get_json_field('name')
     phone = get_json_field('phone')
     location_id = get_json_field('location_id')
+
+    subject_id = get_json_field('subject_id') if 'subject_id' in request.get_json() else None
+
     exist_user = Lead.query.filter(Lead.phone == phone, Lead.deleted == False).first()
     if not exist_user:
         lead = {
@@ -22,19 +25,19 @@ def register_lead():
             "phone": phone,
             "calendar_day": calendar_day.id,
             "account_period_id": accounting_period,
-            "location_id": location_id
+            "location_id": location_id,
         }
-        add_lead = Lead(**lead)
-        add_lead.add()
-        return jsonify({
-            "msg": "Siz muvaffaqiyatli ro'yxatdan o'tdingiz",
-            "success": True
-        })
-    else:
-        return jsonify({
-            "msg": "Ushbu telefon raqam allaqachon kiritilgan!",
-            "success": False
-        })
+        exist_user = Lead(**lead)
+        exist_user.add()
+    if subject_id:
+        subject = Subjects.query.filter(Subjects.id == subject_id).first()
+        if exist_user not in subject.leads:
+            subject.leads.append(exist_user)
+            db.session.commit()
+    return jsonify({
+        "msg": "Siz muvaffaqiyatli ro'yxatdan o'tdingiz",
+        "success": True
+    })
 
 
 @app.route(f'{api}/get_leads_location/<status>/<location_id>')

@@ -90,7 +90,6 @@ def buy_book():
         contains_eager(AccountingPeriod.month)).order_by(desc(CalendarMonth.id)).first()
     identity = get_jwt_identity()
     user = Users.query.filter(Users.user_id == identity).first()
-    print(calendar_day.id)
     if request.method == "POST":
         data = request.get_json()
 

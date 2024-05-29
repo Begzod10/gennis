@@ -49,7 +49,7 @@ def delete_book_images(book):
 
 
 def update_book(book):
-    pprint(request.form)
+
     info = json.loads(request.form.get('info'))
     book.name = info.get('name', book.name)
     book.desc = info.get('desc', book.desc)
@@ -76,7 +76,6 @@ def save_image(img, i=None, book=None):
     img_url = os.path.join("static", "img_folder", photo_filename)
     if img and book:
         # Assign the image URL to the first empty slot
-        print(['img', 'img2', 'img3'][i])
         setattr(book, ['img', 'img2', 'img3'][i], img_url)
         db.session.commit()
     else:

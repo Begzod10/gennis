@@ -77,6 +77,8 @@ class CalendarYear(db.Model):
     teacher_group_statistics = relationship("TeacherGroupStatistics", backref="year",
                                             order_by="TeacherGroupStatistics.id",
                                             lazy="select")
+    capitals = relationship("Capital", backref="year", lazy="select", order_by="Capital.id")
+    test = relationship("GroupTest", backref="year", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -128,6 +130,8 @@ class CalendarMonth(db.Model):
     teacher_group_statistics = relationship("TeacherGroupStatistics", backref="month",
                                             order_by="TeacherGroupStatistics.id",
                                             lazy="select")
+    capitals = relationship("Capital", backref="month", lazy="select", order_by="Capital.id")
+    test = relationship("GroupTest", backref="month", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -165,6 +169,7 @@ class AccountingPeriod(db.Model):
     editor_balances = relationship("EditorBalance", backref="period", lazy="select", order_by="EditorBalance.id")
     book_debts = relationship("CollectedBookPayments", backref="period", lazy="select",
                               order_by="CollectedBookPayments.id")
+    capitals = relationship("Capital", backref="period", lazy="select", order_by="Capital.id")
 
 
 class CalendarDay(db.Model):
@@ -210,6 +215,8 @@ class CalendarDay(db.Model):
 
     teacher_group_statistics = relationship("TeacherGroupStatistics", backref="day",
                                             order_by="TeacherGroupStatistics.id", lazy="select")
+    capitals = relationship("Capital", backref="day", lazy="select", order_by="Capital.id")
+    test = relationship("GroupTest", backref="day", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -224,7 +231,7 @@ class Locations(db.Model):
     __tablename__ = "locations"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    number = Column(Integer)
+    number_location = Column(String)
     location = Column(String)
     link = Column(String)
     code = Column(Integer)
@@ -544,6 +551,8 @@ class Subjects(db.Model):
                                               order_by="AttendanceHistoryTeacher.id")
     subject_level = relationship('SubjectLevels', backref="subject", order_by="SubjectLevels.id")
     room = relationship("Rooms", secondary="room_subject", backref="subject", order_by="Rooms.id")
+    leads = relationship('Lead', secondary="lead_subject", backref="subject", order_by="Lead.id")
+    test = relationship('GroupTest', backref="subject", order_by="GroupTest.id")
     old_id = Column(Integer)
     disabled = Column(Boolean)
     classroom_id = Column(Integer)
@@ -567,6 +576,7 @@ class SubjectLevels(db.Model):
     groups = relationship("Groups", backref="level", order_by="Groups.id")
     classroom_id = Column(Integer)
     disabled = Column(Boolean)
+    test = relationship('GroupTest', backref="subject_level", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -595,3 +605,23 @@ class Professions(db.Model):
     def add(self):
         db.session.add(self)
         db.session.commit()
+
+# class TableB(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     # Define attributes for TableB
+#
+#
+# class TableA(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     table_b_id_1 = db.Column(db.Integer, db.ForeignKey('table_b.id'))
+#     table_b_id_2 = db.Column(db.Integer, db.ForeignKey('table_b.id'))
+#     # Define other attributes for TableA
+#
+#     # Define relationships
+#     table_b_1 = db.relationship('TableB', foreign_keys=[table_b_id_1])
+#     table_b_2 = db.relationship('TableB', foreign_keys=[table_b_id_2])
+
+#     order qoshib korish kere
+
+
+# capital table ga misol

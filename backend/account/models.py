@@ -4,6 +4,52 @@ from backend.group.models import Groups
 from backend.student.models import Students
 
 
+class Category(db.Model):
+    __tablename__ = "category"
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    number = Column(Integer)
+    img = Column(String)
+    number_category = Column(String)
+    capitals = relationship("Capital", backref="capital_category", order_by="Capital.id", lazy="select")
+
+    def convert_json(self, location_id=None):
+        addition_categories = ConnectedCategory.query.filter(
+            ConnectedCategory.main_category_id == self.id).order_by(ConnectedCategory.id).all()
+        info = {
+            "id": self.id,
+            'name': self.name,
+            'number': self.number,
+            "img": self.img,
+            "number_category": self.number_category,
+            'addition_categories': [addition_category.convert_json() for addition_category in addition_categories],
+            "capitals": []
+        }
+        for capital in self.capitals:
+            if not capital.deleted:
+                info['capitals'].append(capital.convert_json(location_id=location_id))
+        return info
+
+
+class ConnectedCategory(db.Model):
+    __tablename__ = "connected_category"
+    id = Column(Integer, primary_key=True)
+    addition_category_id = Column(Integer, ForeignKey('category.id'))
+    main_category_id = Column(Integer, ForeignKey('category.id'))
+    first = db.relationship("Category", foreign_keys=[addition_category_id])
+    second = db.relationship("Category", foreign_keys=[main_category_id])
+
+    def convert_json(self):
+        addition_categories = ConnectedCategory.query.filter(
+            ConnectedCategory.main_category_id == self.addition_category_id).order_by(ConnectedCategory.id).all()
+        info = {
+            'name': self.first.name,
+            'number': self.first.number,
+            'addition_categories': [addition_category.convert_json() for addition_category in addition_categories]
+        }
+        return info
+
+
 class PaymentTypes(db.Model):
     __tablename__ = "paymenttypes"
     id = Column(Integer, primary_key=True)
@@ -427,7 +473,6 @@ class CapitalCategory(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     number = Column(String)
-    capitals = relationship("Capital", backref="capital_category", order_by="Capital.id", lazy="select")
 
     def convert_json(self, entire=False):
         info = {
@@ -451,27 +496,65 @@ class Capital(db.Model):
     number = Column(String)
     price = Column(BigInteger)
     term = Column(Integer)
-    category_id = Column(Integer, ForeignKey('capital_category.id'))
+    img = Column(String)
+    category_id = Column(Integer, ForeignKey('category.id'))
     location_id = Column(Integer, ForeignKey('locations.id'))
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
+    calendar_year = Column(Integer, ForeignKey('calendaryear.id'))
     account_period_id = Column(Integer, ForeignKey('accountingperiod.id'))
     payment_type_id = Column(Integer, ForeignKey('paymenttypes.id'))
     calendar_month = Column(Integer, ForeignKey("calendarmonth.id"))
     total_down_cost = Column(BigInteger)
+    deleted = Column(Boolean, default=False)
 
-    def convert_json(self, entire=False):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "number": self.number,
-            "price": self.price,
-            "term": self.term,
-            "category": {
-                "id": self.capital_category.id,
-                "name": self.capital_category.name,
-            },
-            "total_down_cost": self.total_down_cost
-        }
+    def convert_json(self, entire=False, location_id=None):
+
+        if location_id and self.location_id == location_id:
+            return {
+                "id": self.id,
+                "name": self.name,
+                "number": self.number,
+                "price": self.price,
+                "term": self.term,
+                "category": {
+                    "id": self.capital_category.id,
+                    "name": self.capital_category.name,
+
+                },
+                "total_down_cost": self.total_down_cost,
+                "img": self.img,
+                "day": self.day.date.strftime("%d"),
+                "month": self.day.date.strftime("%m"),
+                "year": self.day.date.strftime("%Y"),
+                "payment_type": {
+                    "id": self.payment_type.id,
+                    "name": self.payment_type.name,
+                }
+
+            }
+        else:
+            return {
+                "id": self.id,
+                "name": self.name,
+                "number": self.number,
+                "price": self.price,
+                "term": self.term,
+                "category": {
+                    "id": self.capital_category.id,
+                    "name": self.capital_category.name,
+
+                },
+                "total_down_cost": self.total_down_cost,
+                "img": self.img,
+                "day": self.day.date.strftime("%d"),
+                "month": self.day.date.strftime("%m"),
+                "year": self.day.date.strftime("%Y"),
+                "payment_type": {
+                    "id": self.payment_type.id,
+                    "name": self.payment_type.name,
+                }
+
+            }
 
     def add(self):
         db.session.add(self)
@@ -607,7 +690,8 @@ class TeacherBlackSalary(db.Model):
             "student_name": self.student.user.name,
             "student_surname": self.student.user.surname,
             "student_id": self.student.id,
-            "group_name": [gr.name if gr.teacher_id == group.teacher_id else "" for gr in student.group]
+            "group_name": [gr.name if gr.teacher_id == group.teacher_id else "" for gr in student.group],
+            "month": self.month.date.strftime("%Y-%m")
 
         }
 

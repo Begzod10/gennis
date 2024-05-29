@@ -299,6 +299,15 @@ def get_json_field(field_name):
     return request.get_json().get(field_name)
 
 
+def get_form_field(field_name, type_form=None):
+    if type_form == "file":
+        return request.files.get(field_name)
+    elif type_form == "file_list":
+        return request.files.getlist(field_name)
+    else:
+        return request.form.get(field_name)
+
+
 def iterate_models(model, relationship=None, entire=False):
     list_items = []
     for subject in model:
@@ -544,9 +553,9 @@ def remove_items_create_group(list_block):
     return filtered_teachers
 
 
-def check_exist_id():
+def check_exist_id(user_id=None):
     id = uuid.uuid1()
-    user_id = id.hex[0:35]
+    user_id = id.hex[0:35] if not user_id else user_id
     exist_user = Users.query.filter(Users.user_id == user_id).first()
     while exist_user:
         id = uuid.uuid1()
@@ -558,4 +567,12 @@ def check_exist_id():
 def send_user_info(user):
     requests.post(f"{classroom_server}/api/update_user_info", json={
         "user": user.convert_json(),
+    })
+
+
+def send_subject_server(classroom_server, subject):
+    requests.post(f"{classroom_server}/api/get_subjects", headers={
+        'Content-Type': 'application/json'
+    }, json={
+        "subject": subject.name
     })

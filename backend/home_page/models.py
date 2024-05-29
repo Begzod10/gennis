@@ -1,7 +1,6 @@
 from backend.models.models import Column, Integer, ForeignKey, String, relationship, db, Date
 
 
-
 class Link(db.Model):
     __tablename__ = "link"
     id = Column(Integer, primary_key=True)
@@ -9,7 +8,7 @@ class Link(db.Model):
     link = Column(String)
     img = Column(String)
 
-    def json(self):
+    def convert_json(self):
         info = {
             'id': self.id,
             'name': self.name,
@@ -29,13 +28,13 @@ class TeacherData(db.Model):
     facebook = Column(String)
     img = Column(String)
 
-    def json(self):
+    def convert_json(self):
         info = {
             'text': self.text,
             'telegram': self.telegram,
             'instagram': self.instagram,
             'facebook': self.facebook,
-            'img': self.img,
+            'certificate': self.img,
         }
         return info
 
@@ -58,12 +57,17 @@ class StudentCertificate(db.Model):
     student_id = Column(Integer, ForeignKey('students.id'))
     img = Column(String)
 
-    def json(self):
+    def convert_json(self):
         info = {
             'id': self.id,
             'text': self.text,
-            'student': self.student.user.name,
-            'teacher': self.teacher.user.name,
+            'student_name': self.student.user.name,
+            'student_surname': self.student.user.surname,
+            'teacher_name': self.teacher.user.name,
+            'teacher_surname': self.teacher.user.surname,
+            'group_id': self.group_id,
+            'student_id': self.student.user.id,
+            'teacher_id': self.teacher.user.id,
             'img': self.img,
         }
         return info
@@ -78,13 +82,13 @@ class News(db.Model):
     links = relationship('NewsLink', backref="news", order_by="NewsLink.id", lazy="select")
     images = relationship('NewsImg', backref="news", order_by="NewsImg.id", lazy="select")
 
-    def json(self):
+    def convert_json(self):
         link_list = []
         for link in self.links:
-            link_list.append(link.json())
+            link_list.append(link.convert_json())
         files = []
         for img in self.images:
-            files.append(img.json())
+            files.append(img.convert_json())
         info = {
             'id': self.id,
             'title': self.title,
@@ -103,7 +107,7 @@ class NewsLink(db.Model):
     link = Column(String)
     news_id = Column(Integer, ForeignKey('news.id'))
 
-    def json(self):
+    def convert_json(self):
         info = {
             'id': self.id,
             'name': self.name,
@@ -118,7 +122,7 @@ class NewsImg(db.Model):
     url = Column(String)
     new_id = Column(Integer, ForeignKey('news.id'))
 
-    def json(self):
+    def convert_json(self):
         info = {
             'id': self.id,
             'url': self.url
@@ -133,7 +137,7 @@ class HomeDesign(db.Model):
     text = Column(String)
     img = Column(String)
 
-    def json(self):
+    def convert_json(self):
         info = {
             'name': self.name,
             'text': self.text,
@@ -149,7 +153,7 @@ class HomeVideo(db.Model):
     text = Column(String)
     url = Column(String)
 
-    def json(self):
+    def convert_json(self):
         info = {
             'name': self.name,
             'text': self.text,
@@ -164,6 +168,14 @@ class Advantages(db.Model):
     name = Column(String)
     text = Column(String)
     img = Column(String)
+
+    def convert_json(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'img': self.img,
+            'text': self.text
+        }
 
 
 class Comments(db.Model):

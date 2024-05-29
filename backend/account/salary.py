@@ -7,13 +7,14 @@ from backend.models.models import Teachers, TeacherSalary, StaffSalary, Staff, P
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.functions.debt_salary_update import staff_salary_update
 from backend.functions.utils import iterate_models
+from pprint import pprint
 
 
 @app.route(f'{api}/salary_info/<user_id>')
 @jwt_required()
 def salary_info(user_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
-    platform_user = Users.query.filter(Users.user_id == get_jwt_identity())
+    platform_user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
     user = Users.query.filter(Users.id == user_id).first()
     teacher = Teachers.query.filter(Teachers.user_id == user.id).first()
     staff = Staff.query.filter(Staff.user_id == user.id).first()
@@ -29,7 +30,10 @@ def salary_info(user_id):
         years = CalendarYear.query.filter(CalendarYear.id.in_([year.calendar_year for year in salary]))
 
     if teacher or platform_user.director:
-        locations_list = [location.convert_json() for location in teacher.locations]
+        if teacher:
+            locations_list = [location.convert_json() for location in teacher.locations]
+        else:
+            locations_list = [location.convert_json() for location in locations]
     elif staff:
         locations_list = [location.convert_json()]
     else:
@@ -258,8 +262,6 @@ def black_salary(teacher_id):
         or_(TeacherBlackSalary.status == False, TeacherBlackSalary.status == None)).order_by(
         TeacherBlackSalary.id).all()
     group_names = []
-    print(teacher.user.name)
-    print(black_salaries)
     for gr in teacher.group:
         if gr.deleted != True and gr.status == True:
             group_names.append(gr.name)
