@@ -78,6 +78,7 @@ class CalendarYear(db.Model):
                                             order_by="TeacherGroupStatistics.id",
                                             lazy="select")
     capitals = relationship("Capital", backref="year", lazy="select", order_by="Capital.id")
+    test = relationship("GroupTest", backref="year", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -130,6 +131,7 @@ class CalendarMonth(db.Model):
                                             order_by="TeacherGroupStatistics.id",
                                             lazy="select")
     capitals = relationship("Capital", backref="month", lazy="select", order_by="Capital.id")
+    test = relationship("GroupTest", backref="month", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -214,6 +216,7 @@ class CalendarDay(db.Model):
     teacher_group_statistics = relationship("TeacherGroupStatistics", backref="day",
                                             order_by="TeacherGroupStatistics.id", lazy="select")
     capitals = relationship("Capital", backref="day", lazy="select", order_by="Capital.id")
+    test = relationship("GroupTest", backref="day", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -549,6 +552,7 @@ class Subjects(db.Model):
     subject_level = relationship('SubjectLevels', backref="subject", order_by="SubjectLevels.id")
     room = relationship("Rooms", secondary="room_subject", backref="subject", order_by="Rooms.id")
     leads = relationship('Lead', secondary="lead_subject", backref="subject", order_by="Lead.id")
+    test = relationship('GroupTest', backref="subject", order_by="GroupTest.id")
     old_id = Column(Integer)
     disabled = Column(Boolean)
     classroom_id = Column(Integer)
@@ -572,6 +576,7 @@ class SubjectLevels(db.Model):
     groups = relationship("Groups", backref="level", order_by="Groups.id")
     classroom_id = Column(Integer)
     disabled = Column(Boolean)
+    test = relationship('GroupTest', backref="subject_level", order_by="GroupTest.id")
 
     def convert_json(self, entire=False):
         return {

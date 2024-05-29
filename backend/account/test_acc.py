@@ -1,3 +1,6 @@
+from flask import session
+from sqlalchemy import func
+
 from app import app, db, desc, contains_eager, request, jsonify
 from backend.group.models import Attendance, AttendanceDays
 
@@ -7,6 +10,7 @@ from backend.account.utils import student_collection_api, teacher_collection_api
 from backend.functions.utils import api, find_calendar_date, get_json_field, update_staff_salary_id, \
     update_teacher_salary_id, update_salary
 from pprint import pprint
+from sqlalchemy.orm import sessionmaker
 
 
 @app.route('/collection', methods=["POST", "GET"])
@@ -60,5 +64,3 @@ def calculate_student_debts(student_id):
     for course in courses:
         total_debt += int(course["result"])
     return jsonify({"total_debt": total_debt})
-
-

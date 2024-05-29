@@ -568,3 +568,11 @@ def send_user_info(user):
     requests.post(f"{classroom_server}/api/update_user_info", json={
         "user": user.convert_json(),
     })
+
+
+def send_subject_server(classroom_server, subject):
+    requests.post(f"{classroom_server}/api/get_subjects", headers={
+        'Content-Type': 'application/json'
+    }, json={
+        "subject": subject.name
+    })

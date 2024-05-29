@@ -14,7 +14,9 @@ app.config.from_object('backend.models.config')
 db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
+
 classroom_server = "http://192.168.0.102:5001"
+
 # classroom_server = "https://classroom.gennis.uz/"
 telegram_bot_server = "http://127.0.0.1:5000"
 
@@ -26,6 +28,7 @@ from backend.account.payment import *
 from backend.account.account import *
 from backend.account.overhead_capital import *
 from backend.account.salary import *
+from backend.account.test_acc import *
 
 # functions folder
 from backend.functions.checks import *
@@ -55,6 +58,7 @@ from backend.teacher.teacher_home_page import *
 from backend.group.create_group import *
 from backend.group.view import *
 from backend.group.change import *
+from backend.group.test import *
 
 # time_table
 from backend.time_table.view import *
@@ -82,6 +86,10 @@ from backend.lead.views import *
 # mobile
 from backend.mobile.views import *
 
+
+
+# tasks
+from backend.tasks.admin import *
 # teacher observation, attendance, teacher_group_statistics
 if __name__ == '__main__':
     app.run()

@@ -1,5 +1,5 @@
 from backend.models.models import Column, Integer, ForeignKey, String, Boolean, relationship, DateTime, db, \
-    contains_eager, BigInteger
+    contains_eager, BigInteger, JSON
 from backend.group.models import Groups
 from backend.student.models import Students
 
@@ -20,6 +20,7 @@ class Category(db.Model):
             "id": self.id,
             'name': self.name,
             "img": self.img,
+            # "is_delete": True if not self.
             "number_category": self.number_category,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories],
             "capitals": []
