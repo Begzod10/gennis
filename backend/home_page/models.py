@@ -169,6 +169,14 @@ class Advantages(db.Model):
     text = Column(String)
     img = Column(String)
 
+    def convert_json(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'img': self.img,
+            'text': self.text
+        }
+
 
 class Comments(db.Model):
     id = Column(Integer, primary_key=True)

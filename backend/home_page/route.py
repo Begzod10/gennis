@@ -11,6 +11,7 @@ from backend.models.models import Advantages, CommentLikes, HomeVideo, HomeDesig
     Gallery, NewsImg, StudentCertificate, Groups, Teachers, TeacherData, Subjects, Link, Locations
 import requests
 from pprint import pprint
+from backend.functions.utils import get_json_field
 
 
 @app.route(f'{api}/change_locations/<int:location_id>', methods=['POST'])
@@ -76,21 +77,16 @@ def advantage_img(advantage_id):
 @app.route(f'{api}/change_advantage/<int:advantage_id>', methods=['POST'])
 @jwt_required()
 def change_advantage(advantage_id):
+    pprint(request.get_json())
     advantage = Advantages.query.filter(Advantages.id == advantage_id).first()
-    advantage.name = request.get_json()['name']
-    advantage.text = request.get_json()['text']
 
+    advantage.name = get_json_field('name')
+    advantage.text = get_json_field('text')
     db.session.commit()
-    info = {
-        'id': advantage.id,
-        'name': advantage.name,
-        'img': advantage.img,
-        'text': advantage.text,
-    }
     return jsonify({
         "msg": "Ma'lumotlar o'zgartirildi",
         "success": True,
-        "advantage": info
+        "advantage": advantage.convert_json()
     })
 
 
@@ -240,7 +236,6 @@ def get_home_info():
 
 @app.route(f'{api}/add_home_design', methods=['POST'])
 def add_home_design():
-
     name = request.form.get('name')
     text = request.form.get('text')
 

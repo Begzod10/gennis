@@ -299,6 +299,15 @@ def get_json_field(field_name):
     return request.get_json().get(field_name)
 
 
+def get_form_field(field_name, type_form=None):
+    if type_form == "file":
+        return request.files.get(field_name)
+    elif type_form == "file_list":
+        return request.files.getlist(field_name)
+    else:
+        return request.form.get(field_name)
+
+
 def iterate_models(model, relationship=None, entire=False):
     list_items = []
     for subject in model:

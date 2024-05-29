@@ -13,7 +13,7 @@ class Category(db.Model):
     number_category = Column(String)
     capitals = relationship("Capital", backref="capital_category", order_by="Capital.id", lazy="select")
 
-    def convert_json(self):
+    def convert_json(self, location_id=None):
         addition_categories = ConnectedCategory.query.filter(
             ConnectedCategory.main_category_id == self.id).order_by(ConnectedCategory.id).all()
         info = {
@@ -27,7 +27,7 @@ class Category(db.Model):
         }
         for capital in self.capitals:
             if not capital.deleted:
-                info['capitals'].append(capital.convert_json())
+                info['capitals'].append(capital.convert_json(location_id=location_id))
         return info
 
 
@@ -496,6 +496,7 @@ class Capital(db.Model):
     number = Column(String)
     price = Column(BigInteger)
     term = Column(Integer)
+    img = Column(String)
     category_id = Column(Integer, ForeignKey('category.id'))
     location_id = Column(Integer, ForeignKey('locations.id'))
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
@@ -506,19 +507,54 @@ class Capital(db.Model):
     total_down_cost = Column(BigInteger)
     deleted = Column(Boolean, default=False)
 
-    def convert_json(self, entire=False):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "number": self.number,
-            "price": self.price,
-            "term": self.term,
-            "category": {
-                "id": self.capital_category.id,
-                "name": self.capital_category.name,
-            },
-            "total_down_cost": self.total_down_cost
-        }
+    def convert_json(self, entire=False, location_id=None):
+
+        if location_id and self.location_id == location_id:
+            return {
+                "id": self.id,
+                "name": self.name,
+                "number": self.number,
+                "price": self.price,
+                "term": self.term,
+                "category": {
+                    "id": self.capital_category.id,
+                    "name": self.capital_category.name,
+
+                },
+                "total_down_cost": self.total_down_cost,
+                "img": self.img,
+                "day": self.day.date.strftime("%d"),
+                "month": self.day.date.strftime("%m"),
+                "year": self.day.date.strftime("%Y"),
+                "payment_type": {
+                    "id": self.payment_type.id,
+                    "name": self.payment_type.name,
+                }
+
+            }
+        else:
+            return {
+                "id": self.id,
+                "name": self.name,
+                "number": self.number,
+                "price": self.price,
+                "term": self.term,
+                "category": {
+                    "id": self.capital_category.id,
+                    "name": self.capital_category.name,
+
+                },
+                "total_down_cost": self.total_down_cost,
+                "img": self.img,
+                "day": self.day.date.strftime("%d"),
+                "month": self.day.date.strftime("%m"),
+                "year": self.day.date.strftime("%Y"),
+                "payment_type": {
+                    "id": self.payment_type.id,
+                    "name": self.payment_type.name,
+                }
+
+            }
 
     def add(self):
         db.session.add(self)

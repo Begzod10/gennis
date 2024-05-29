@@ -14,7 +14,7 @@ app.config.from_object('backend.models.config')
 db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
-classroom_server = "http://192.168.1.112:5001"
+classroom_server = "http://192.168.1.105:5001"
 # classroom_server = "https://classroom.gennis.uz/"
 telegram_bot_server = "http://127.0.0.1:5000"
 

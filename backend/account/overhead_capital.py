@@ -1,11 +1,12 @@
-from app import app, db, jsonify, contains_eager, request, desc
+from app import app, db, jsonify, contains_eager, request, desc, send_file
 from werkzeug.utils import secure_filename
 
-from backend.models.models import Overhead, CapitalExpenditure, AccountingPeriod, PaymentTypes, DeletedOverhead, \
-    CalendarMonth, CalendarDay, DeletedCapitalExpenditure, Category, ConnectedCategory, Capital
+from backend.models.models import Overhead, AccountingPeriod, PaymentTypes, DeletedOverhead, \
+    CalendarMonth, CalendarDay, Category, ConnectedCategory, Capital
 from flask_jwt_extended import jwt_required
+from backend.functions.filters import old_current_dates
 from backend.functions.small_info import room_images, checkFile
-from backend.functions.utils import get_json_field, find_calendar_date, api, iterate_models
+from backend.functions.utils import get_json_field, find_calendar_date, api, iterate_models, get_form_field
 from .utils import update_capital
 from datetime import datetime
 import os
@@ -53,9 +54,11 @@ def add_capital_category():
     })
 
 
-@app.route(f'{api}/get_capital_category/<int:category_id>', methods=['GET', "POST"])
-def get_capital_category(category_id):
+@app.route(f'{api}/get_capital_category/<int:category_id>/<int:location_id>', methods=['GET', "POST"])
+@jwt_required()
+def get_capital_category(category_id, location_id):
     category = Category.query.filter(Category.id == category_id).first()
+    update_capital(location_id)
     if request.method == "POST":
         info = request.form.get("info")
         json_file = json.loads(info)
@@ -74,10 +77,22 @@ def get_capital_category(category_id):
         db.session.commit()
         return jsonify({
             "msg": f"{category.name} ma'lumotlari o'zgartirildi",
-            'category': category.convert_json()
+            'category': category.convert_json(location_id)
         })
     return jsonify({
-        'category': category.convert_json()
+        'category': category.convert_json(location_id),
+        "capital_tools": old_current_dates()
+    })
+
+
+@app.route(f'{api}/deleted_capitals/<int:category_id>/<int:location_id>')
+@jwt_required()
+def deleted_capitals(category_id, location_id):
+
+    capitals = Capital.query.filter(Capital.category_id == category_id, Capital.location_id == location_id).order_by(
+        Capital.id).all()
+    return jsonify({
+        "capitals": iterate_models(capitals)
     })
 
 
@@ -93,44 +108,109 @@ def get_capital_categories():
     })
 
 
-@app.route(f'{api}/add_capital/', defaults={"location_id": None}, methods=['POST', "PATCH", "DELETE"])
-@app.route(f'{api}/add_capital/<location_id>', methods=['POST', "PATCH", "DELETE"])
+@app.route(f'{api}/add_capital', defaults={"location_id": None}, methods=['POST', "PUT", "DELETE"])
+@app.route(f'{api}/add_capital/<location_id>', methods=['POST', "PUT", "DELETE"])
 def add_capital(location_id):
-    calendar_year, calendar_month, calendar_day = find_calendar_date()
     accounting_period = db.session.query(AccountingPeriod).join(AccountingPeriod.month).options(
         contains_eager(AccountingPeriod.month)).order_by(desc(CalendarMonth.id)).first()
     if request.method == "POST":
+        current_year = datetime.now().year
+        old_year = datetime.now().year - 1
+        month = str(datetime.now().month)
+        info = request.form.get("info")
+        json_file = json.loads(info)
+        month_get = json_file.get('month')
+        day = json_file.get('day')
+        if month_get == "12" and month == "01":
+            current_year = old_year
+        if not month_get:
+            month_get = month
+
+        date_day = str(current_year) + "-" + str(month_get) + "-" + str(day)
+        date_month = str(current_year) + "-" + str(month_get)
+        date_year = datetime.strptime(str(current_year), "%Y")
+        date_day = datetime.strptime(date_day, "%Y-%m-%d")
+        date_month = datetime.strptime(date_month, "%Y-%m")
+        calendar_year, calendar_month, calendar_day = find_calendar_date(date_day=date_day, date_month=date_month,
+                                                                         date_year=date_year)
+        img = request.files.get('img')
+        url = ""
+        if img and checkFile(img.filename):
+            app.config['UPLOAD_FOLDER'] = room_images()
+            photo_filename = secure_filename(img.filename)
+            img.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
+            url = "static" + "/" + "room" + "/" + photo_filename
+
+            db.session.commit()
+
         capital = {
-            "name": get_json_field('name'),
-            "number": get_json_field('number'),
-            "price": get_json_field('price'),
-            "term": get_json_field('term'),
-            "category_id": get_json_field('category_id'),
+            "name": json_file.get('capital_name'),
+            "number": json_file.get('number'),
+            "price": json_file.get('price'),
+            "term": json_file.get('term'),
+            "category_id": json_file.get('category_id'),
             "calendar_year": calendar_year.id,
             "location_id": location_id,
             "calendar_day": calendar_day.id,
             "account_period_id": accounting_period.id,
-            "payment_type_id": get_json_field('payment_type_id'),
-            "calendar_month": calendar_month.id
+            "payment_type_id": json_file.get('payment_type_id'),
+            "calendar_month": calendar_month.id,
+            "img": url
 
         }
+
         capital_add = Capital(**capital)
         capital_add.add()
         return jsonify({
-            "msg": f"{get_json_field('name')} ro'yxatga qo'shildi",
-            "success": True
+            "msg": f"{json_file.get('name')} ro'yxatga qo'shildi",
+            "success": True,
+            "capital": capital_add.convert_json()
         })
-    elif request.method == "PATCH":
-        capital_id = get_json_field('capital_id')
+    elif request.method == "PUT":
+        pprint(request.form.get('info'))
+        current_year = datetime.now().year
+        old_year = datetime.now().year - 1
+        month = str(datetime.now().month)
+        info = request.form.get("info")
+        json_file = json.loads(info)
+        month_get = json_file.get('month')
+        day = json_file.get('day')
+        if month_get == "12" and month == "01":
+            current_year = old_year
+        if not month_get:
+            month_get = month
+
+        date_day = str(current_year) + "-" + str(month_get) + "-" + str(day)
+        date_month = str(current_year) + "-" + str(month_get)
+        date_year = datetime.strptime(str(current_year), "%Y")
+        date_day = datetime.strptime(date_day, "%Y-%m-%d")
+        date_month = datetime.strptime(date_month, "%Y-%m")
+        calendar_year, calendar_month, calendar_day = find_calendar_date(date_day=date_day, date_month=date_month,
+                                                                         date_year=date_year)
+        capital_id = json_file.get('capital_id')
         capital = Capital.query.filter(Capital.id == capital_id).first()
-        capital.name = get_json_field('name')
-        capital.number = get_json_field('number')
-        capital.price = get_json_field('price')
-        capital.term = get_json_field('term')
+        capital.name = json_file.get('capital_name')
+        capital.number = json_file.get('number')
+        capital.price = json_file.get('price')
+        capital.term = json_file.get('term')
+        capital.calendar_day = calendar_day.id
+        capital.calendar_month = calendar_month.id
+        capital.calendar_day = calendar_day.id
+        capital.payment_type_id = json_file.get('payment_type_id')
+        img = request.files.get('img')
+
+        if img and checkFile(img.filename):
+            print(True)
+            app.config['UPLOAD_FOLDER'] = room_images()
+            photo_filename = secure_filename(img.filename)
+            img.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
+            url = "static" + "/" + "room" + "/" + photo_filename
+            capital.img = url
         db.session.commit()
         return jsonify({
             "msg": f"{capital.name} ma'lumotlari o'zgartirildi",
-            "success": True
+            "success": True,
+            "capital": capital.convert_json()
         })
     else:
         capital_id = get_json_field('capital_id')
@@ -157,32 +237,33 @@ def add_capital(location_id):
 
 
 @app.route(f'{api}/get_capital_numbers', methods=['POST'])
+@jwt_required()
 def get_capital_numbers():
-    capital_id_list = get_json_field('capitals')
     category_id = get_json_field('category_id')
     category = Category.query.filter(Category.id == category_id).first()
-    capitals = Capital.query.filter(Capital.id.in_([capital for capital in capital_id_list])).order_by(Capital.id).all()
+    capitals = Capital.query.filter(Capital.category_id == category.id, Capital.deleted != True).order_by(
+        Capital.id).all()
 
     document = Document()
 
     document.add_heading(f'{category.name} ga kiruvchi buyumlar:', 0)
-
-    table = document.add_table(rows=len(capital_id_list) - 1, cols=2)
+    print(capitals)
+    table = document.add_table(rows=len(capitals) - 1, cols=2)
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = 'Name'
     hdr_cells[1].text = 'Number'
     num = 0
     for capital in capitals:
         row_cells = table.add_row().cells
+
         row_cells[0].text = capital.name
         row_cells[1].text = capital.number
     document.add_page_break()
 
-    document.save('frontend/build/static/contract_folder/demo.docx')
-    return jsonify({
-        "msg": "Fayl yaratildi",
-        "file": f"frontend/build/static/contract_folder/{category.name}.docx"
-    })
+    document.save(f'frontend/build/static/contract_folder/{category.name}.docx')
+    return send_file(f"frontend/build/static/contract_folder/{category.name}.docx", mimetype=None, as_attachment=False,
+                     download_name=category.name, conditional=True, etag=True,
+                     last_modified=None, max_age=None)
 
 
 @app.route(f'{api}/add_overhead/<int:location_id>', methods=['POST'])

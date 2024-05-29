@@ -113,6 +113,10 @@ def teacher_statistics(location_id):
                     "percentage": round(percentage / len(del_st_statistics)) if del_st_statistics else 0
                 }
                 teachers_list.append(info)
+
+        teachers_list = sorted(teachers_list, key=lambda d: d['percentage'])
+        teachers_list.reverse()
+
         return jsonify({
             "teachers_list": teachers_list
         })
@@ -155,6 +159,8 @@ def teacher_statistics(location_id):
                     "percentage": round(percentage / len(del_st_statistics)) if del_st_statistics else 0
                 }
                 teachers_list.append(info)
+        teachers_list = sorted(teachers_list, key=lambda d: d['percentage'])
+        teachers_list.reverse()
         return jsonify({
             "teachers_list": teachers_list
         })
@@ -184,6 +190,9 @@ def teacher_statistics(location_id):
                     "percentage": round(percentage / len(del_st_statistics)) if del_st_statistics else 0
                 }
                 teachers_list.append(info)
+        teachers_list = sorted(teachers_list, key=lambda d: d['percentage'])
+        teachers_list.reverse()
+        pprint.pprint(teachers_list)
         return jsonify({
             "teachers_list": teachers_list
         })
@@ -233,6 +242,8 @@ def teacher_statistics_deleted_students(location_id):
             ).order_by(
                 TeacherGroupStatistics.calendar_year).all()
             teachers_list += analyze(del_st_statistics, teacher, "deleted_students")
+    teachers_list = sorted(teachers_list, key=lambda d: d['percentage'])
+    teachers_list.reverse()
     return jsonify({
         "teachers_list": teachers_list
     })
