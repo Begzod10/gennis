@@ -19,7 +19,6 @@ class Category(db.Model):
         info = {
             "id": self.id,
             'name': self.name,
-            'number': self.number,
             "img": self.img,
             "number_category": self.number_category,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories],
@@ -43,8 +42,10 @@ class ConnectedCategory(db.Model):
         addition_categories = ConnectedCategory.query.filter(
             ConnectedCategory.main_category_id == self.addition_category_id).order_by(ConnectedCategory.id).all()
         info = {
+            "id": self.first.id,
             'name': self.first.name,
-            'number': self.first.number,
+            'number_category': self.first.number_category,
+            "img": self.first.img,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories]
         }
         return info

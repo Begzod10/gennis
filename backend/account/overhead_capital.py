@@ -15,7 +15,7 @@ from pprint import pprint
 import json
 
 
-@app.route(f'{api}/add_capital_category', methods=['POST'])
+@app.route(f'{api}/add_capital_category', methods=['POST', "PUT"])
 @jwt_required()
 def add_capital_category():
     info = request.form.get("info")
@@ -27,31 +27,45 @@ def add_capital_category():
     name = json_file['name']
     number_category = json_file['number_category']
     img = request.files.get('img')
+    print(img)
     url = ""
     if img and checkFile(img.filename):
         app.config['UPLOAD_FOLDER'] = room_images()
         photo_filename = secure_filename(img.filename)
         img.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_filename))
         url = "static" + "/" + "room" + "/" + photo_filename
+    if request.method == "POST":
 
-    if not category_id:
-        new = Category(name=name, number=1, number_category=number_category, img=url)
-        db.session.add(new)
-        db.session.commit()
+        if not category_id:
+            new = Category(name=name, number=1, number_category=number_category, img=url)
+            db.session.add(new)
+            db.session.commit()
 
+        else:
+            category = Category.query.filter(Category.id == category_id).first()
+            new = Category(name=name, number=category.number + 1, number_category=number_category, img=url)
+            db.session.add(new)
+            db.session.commit()
+            new_connected = ConnectedCategory(addition_category_id=new.id, main_category_id=category_id)
+            db.session.add(new_connected)
+            db.session.commit()
+        return jsonify({
+            'status': True,
+            "category": new.convert_json(),
+            "msg": f"{new.name} turi yaratildi"
+        })
     else:
         category = Category.query.filter(Category.id == category_id).first()
-        new = Category(name=name, number=category.number + 1, number_category=number_category, img=url)
-        db.session.add(new)
+        category.name = name
+        category.number_category = number_category
+        if url:
+            category.img = url
         db.session.commit()
-        new_connected = ConnectedCategory(addition_category_id=new.id, main_category_id=category_id)
-        db.session.add(new_connected)
-        db.session.commit()
-    return jsonify({
-        'status': True,
-        "category": new.convert_json(),
-        "msg": f"{new.name} turi yaratildi"
-    })
+        return jsonify({
+            'status': True,
+            "category": category.convert_json(),
+            "msg": f"{category.name} o'zgartirildi"
+        })
 
 
 @app.route(f'{api}/get_capital_category/<int:category_id>/<int:location_id>', methods=['GET', "POST"])
@@ -88,7 +102,6 @@ def get_capital_category(category_id, location_id):
 @app.route(f'{api}/deleted_capitals/<int:category_id>/<int:location_id>')
 @jwt_required()
 def deleted_capitals(category_id, location_id):
-
     capitals = Capital.query.filter(Capital.category_id == category_id, Capital.location_id == location_id).order_by(
         Capital.id).all()
     return jsonify({
