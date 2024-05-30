@@ -34,8 +34,7 @@ def create_test(group_id):
     create_test = GroupTest(title=info['title'], group_id=group_id, subject_id=info['subject_id'],
                             level_id=info['level_id'], calendar_year=year.id, calendar_month=month.id,
                             calendar_day=day.id)
-    db.session.add(create_test)
-    db.session.commit()
+    create_test.add()
     return jsonify({
         "status": True
     })
