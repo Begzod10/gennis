@@ -24,6 +24,7 @@ from backend.functions.utils import api, send_subject_server
 from backend.group.models import GroupTest
 import calendar
 from backend.functions.utils import get_or_creat_datetime
+from backend.student.models import StudentTest
 
 
 @app.route('/create_test/<int:group_id>', methods=["POST", "GET"])
@@ -42,7 +43,14 @@ def create_test(group_id):
 
 @app.route('/evaluation_test/<int:group_id>', methods=["POST", "GET"])
 def evaluation_test(group_id):
-
+    info = request.get_json()['info']
+    for student in info['students']:
+        add_test_result = StudentTest(subject_id=info['subject_id'], level_id=info['level_id'],
+                                      group_test_id=info['group_test_id'],
+                                      student_id=student['id'], true_answers=student['true_answers'],
+                                      false_answers=student['false_answers'], ball=student['overall_ball'],
+                                      group_id=group_id)
+        add_test_result.add()
     return jsonify({
         "status": True
     })
