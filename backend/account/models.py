@@ -560,8 +560,7 @@ class Capital(db.Model):
                 "payment_type": {
                     "id": self.payment_type.id,
                     "name": self.payment_type.name,
-                },
-                "terms": [term.convert_json() for term in self.term_info]
+                }
 
             }
 
