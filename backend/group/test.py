@@ -6,20 +6,12 @@ from app import app, api, request, db, jsonify, contains_eager, classroom_server
 import pprint
 
 from app import app, api, request, db, jsonify, contains_eager, classroom_server, or_
-
-from backend.functions.filters import old_current_dates
 import requests
-from backend.functions.debt_salary_update import salary_debt
-from flask_jwt_extended import jwt_required
-from backend.student.class_model import Student_Functions
-from backend.group.class_model import Group_Functions
+
 from datetime import datetime
-from backend.functions.utils import find_calendar_date, update_salary, iterate_models, get_json_field
-from backend.models.models import Users, Attendance, Students, AttendanceDays, Teachers, Groups, Locations, Subjects, \
-    StudentCharity, Roles, TeacherBlackSalary, GroupReason, TeacherObservationDay, DeletedStudents, \
-    TeacherGroupStatistics
-from datetime import timedelta
-from backend.models.models import CalendarDay, CalendarMonth, CalendarYear
+
+from backend.models.models import Users, Attendance, Students, AttendanceDays, Teachers, Groups
+
 from backend.functions.utils import api, send_subject_server
 from backend.group.models import GroupTest
 import calendar
@@ -29,7 +21,6 @@ from backend.student.models import StudentTest
 
 @app.route('/create_test/<int:group_id>', methods=["POST", "GET"])
 def create_test(group_id):
-    print("hello")
     info = request.get_json()['info']
     year, month, day = get_or_creat_datetime(info['year'], info['month'], info['day'])
     create_test = GroupTest(title=info['title'], group_id=group_id, subject_id=info['subject_id'],
@@ -47,8 +38,8 @@ def evaluation_test(group_id):
     for student in info['students']:
         add_test_result = StudentTest(subject_id=info['subject_id'], level_id=info['level_id'],
                                       group_test_id=info['group_test_id'],
-                                      student_id=student['id'], true_answers=student['true_answers'],
-                                      false_answers=student['false_answers'], ball=student['overall_ball'],
+                                      student_id=student['id'], true_answers=int(student['true_answers']),
+                                      false_answers=int(student['false_answers']), ball=int(student['overall_ball']),
                                       group_id=group_id)
         add_test_result.add()
     return jsonify({
