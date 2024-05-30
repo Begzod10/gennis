@@ -560,7 +560,8 @@ class Capital(db.Model):
                 "payment_type": {
                     "id": self.payment_type.id,
                     "name": self.payment_type.name,
-                }
+                },
+                "terms": [term.convert_json() for term in self.term_info]
 
             }
 
@@ -582,7 +583,7 @@ class CapitalTerm(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    def convert_json(self,entire=False):
+    def convert_json(self, entire=False):
         return {
             "capital": self.capital.convert_json(),
             "date": self.month.date.strftime("%Y-%m"),

@@ -249,9 +249,12 @@ def add_capital(location_id):
 @app.route(f'{api}/capital_info/<int:capital_id>')
 @jwt_required()
 def capital_info(capital_id):
+    capital = Capital.query.filter(Capital.id == capital_id).first()
     capital_terms = CapitalTerm.query.filter(CapitalTerm.capital_id == capital_id).order_by(CapitalTerm.id).all()
     return jsonify({
-        "terms": iterate_models(capital_terms)
+        "terms": iterate_models(capital_terms),
+        "capital": capital.convert_json(),
+        "capital_tools": old_current_dates()
     })
 
 
