@@ -79,6 +79,7 @@ class CalendarYear(db.Model):
                                             lazy="select")
     capitals = relationship("Capital", backref="year", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="year", order_by="GroupTest.id")
+    student_tests = relationship("StudentTest", backref="year", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -132,6 +133,7 @@ class CalendarMonth(db.Model):
                                             lazy="select")
     capitals = relationship("Capital", backref="month", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="month", order_by="GroupTest.id")
+    student_tests = relationship("StudentTest", backref="month", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -217,6 +219,7 @@ class CalendarDay(db.Model):
                                             order_by="TeacherGroupStatistics.id", lazy="select")
     capitals = relationship("Capital", backref="day", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="day", order_by="GroupTest.id")
+    student_tests = relationship("StudentTest", backref="day", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
         return {
@@ -556,6 +559,7 @@ class Subjects(db.Model):
     old_id = Column(Integer)
     disabled = Column(Boolean)
     classroom_id = Column(Integer)
+    student_tests = relationship("StudentTest", backref="subject", order_by="StudentTest.id")
 
     def convert_json(self):
         return {
@@ -577,6 +581,7 @@ class SubjectLevels(db.Model):
     classroom_id = Column(Integer)
     disabled = Column(Boolean)
     test = relationship('GroupTest', backref="subject_level", order_by="GroupTest.id")
+    student_tests = relationship("StudentTest", backref="subject_level", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
         return {

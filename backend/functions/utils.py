@@ -34,6 +34,28 @@ def new_month():
     return get_month
 
 
+def get_or_creat_datetime(y, m, d):
+    year = datetime.strptime(f"{y}", "%Y")
+    month = datetime.strptime(f"{y}-{m}", "%Y-%m")
+    day = datetime.strptime(f"{y}-{m}-{d}", "%Y-%m-%d")
+
+    def get_or_create(model, date, **kwargs):
+        instance = model.query.filter(model.date == date).first()
+        if instance:
+            return instance
+        else:
+            new_instance = model(date=date, **kwargs)
+            db.session.add(new_instance)
+            db.session.commit()
+            return new_instance
+
+    filtered_year = get_or_create(CalendarYear, year)
+    filtered_month = get_or_create(CalendarMonth, month, year_id=filtered_year.id)
+    filtered_day = get_or_create(CalendarDay, day, year_id=filtered_year.id, month_id=filtered_month.id)
+
+    return filtered_year, filtered_month, filtered_day
+
+
 def refreshdatas(location_id=0):
     """
     update datas by current day , month and year

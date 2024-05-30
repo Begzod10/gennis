@@ -20,6 +20,7 @@ class Category(db.Model):
             "id": self.id,
             'name': self.name,
             "img": self.img,
+            # "is_delete": True if not self.
             "number_category": self.number_category,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories],
             "capitals": []
@@ -712,21 +713,3 @@ class StaffSalary(db.Model):
     staff_deleted_salary = relationship("DeletedStaffSalaries", backref="staff_salary",
                                         order_by="DeletedStaffSalaries.id")
     old_id = Column(Integer)
-
-
-class ExpensesType(db.Model):
-    __tablename__ = "expenses_type"
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    # expenses_connection = relationship("ExpensesConnectionTypes", backref="expenses_type",
-    #                                     order_by="ExpensesConnectionTypes.id")
-
-
-class ExpensesConnectionTypes(db.Model):
-    __tablename__ = "expenses_connection_type"
-    id = Column(Integer, primary_key=True)
-    expenses_type_id = Column(Integer, ForeignKey("expenses_type.id"))
-    parent_type_id = Column(Integer, ForeignKey("expenses_type.id"))
-    expenses_type = relationship("ExpensesType", backref='expenses_type', foreign_keys=[expenses_type_id])
-    parent = relationship("ExpensesType", backref='parent', foreign_keys=[parent_type_id], )
-    order = Column(Integer)
