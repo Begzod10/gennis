@@ -103,6 +103,7 @@ class Students(db.Model):
     lesson_plan = relationship("LessonPlanStudents", uselist=False, backref="student", order_by="LessonPlanStudents.id")
     student_certificate = relationship("StudentCertificate", backref="student", order_by="StudentCertificate.id")
     student_debts = relationship("StudentDebt", backref="student", order_by="StudentDebt.id")
+    student_tests = relationship("StudentTest", backref="student", order_by="StudentTest.id")
 
 
 class Contract_Students(db.Model):
@@ -151,3 +152,16 @@ class RegisterDeletedStudents(db.Model):
     student_id = Column(Integer, ForeignKey('students.id'))
     reason = Column(String)
     calendar_day = Column(Integer, ForeignKey("calendarday.id"))  # relationship qilinmagan
+
+
+class StudentTest(db.Model):
+    __tablename__ = "student_test"
+    id = Column(Integer, primary_key=True)
+    ball = Column(Integer)
+    true_answers = Column(Integer)
+    false_answers = Column(Integer)
+    student_id = Column(Integer, ForeignKey('students.id'))
+    group_test = Column(Integer, ForeignKey('group_test.id'))
+    group_id = Column(Integer, ForeignKey('groups.id'))
+    subject_id = Column(Integer, ForeignKey('subjects.id'))
+    level_id = Column(Integer, ForeignKey('subjectlevels.id'))

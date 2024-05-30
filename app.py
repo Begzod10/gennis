@@ -15,6 +15,8 @@ db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
+classroom_server = "http://192.168.0.108:5001"
+
 classroom_server = "http://192.168.0.102:5001"
 
 # classroom_server = "https://classroom.gennis.uz/"
@@ -86,10 +88,9 @@ from backend.lead.views import *
 # mobile
 from backend.mobile.views import *
 
-
-
 # tasks
 from backend.tasks.admin import *
+
 # teacher observation, attendance, teacher_group_statistics
 if __name__ == '__main__':
     app.run()
