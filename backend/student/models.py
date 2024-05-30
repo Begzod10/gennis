@@ -165,6 +165,3 @@ class StudentTest(db.Model):
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     level_id = Column(Integer, ForeignKey('subjectlevels.id'))
-    calendar_year = Column(Integer, ForeignKey('calendaryear.id'))
-    calendar_month = Column(Integer, ForeignKey('calendarmonth.id'))
-    calendar_day = Column(Integer, ForeignKey('calendarday.id'))
