@@ -11,7 +11,7 @@ import requests
 from datetime import datetime
 
 from backend.models.models import Users, Attendance, Students, AttendanceDays, Teachers, Groups
-
+from backend.models.models import CalendarDay, CalendarMonth, CalendarYear
 from backend.functions.utils import api, send_subject_server
 from backend.group.models import GroupTest
 import calendar
@@ -30,6 +30,48 @@ def create_test(group_id):
     return jsonify({
         "status": True
     })
+
+
+@app.route('/filter_tests_in_group/<int:group_id>', methods=["POST", "GET"])
+def filter_tests_in_group(group_id):
+    if request.method == "GET":
+        calendar_dict = {}
+        group_tests = GroupTest.query.filter(GroupTest.group_id == group_id).all()
+        for group_test in group_tests:
+            year = group_test.year.date.year
+            month = group_test.month.date.month
+
+            if year not in calendar_dict:
+                calendar_dict[year] = set()
+
+            calendar_dict[year].add(month)
+
+        calendar = [{'year': year, 'months': list(months)} for year, months in calendar_dict.items()]
+        return jsonify({
+            "calendar": calendar
+        })
+    else:
+        tests = []
+        info = request.get_json()['info']
+        year = datetime.strptime(f"{info['year']}", "%Y")
+        month = datetime.strptime(f"{info['year']}-{info['month']}", "%Y-%m")
+        filtered_year = CalendarYear.query.filter(CalendarYear.date == year).first()
+        filtered_month = CalendarMonth.query.filter(CalendarMonth.date == month).first()
+        group_tests = GroupTest.query.filter(GroupTest.group_id == group_id,
+                                             GroupTest.calendar_year == filtered_year.id,
+                                             GroupTest.calendar_month == filtered_month.id).all()
+        for group_test in group_tests:
+            info = {
+                'id': group_test.id,
+                'title': group_test.title,
+                'group_id': group_test.group_id,
+                'subject_id': group_test.subject_id,
+                'level_id': group_test.level_id
+            }
+            tests.append(info)
+        return jsonify({
+            "tests": tests
+        })
 
 
 @app.route('/evaluation_test/<int:group_id>', methods=["POST", "GET"])
