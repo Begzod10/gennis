@@ -204,6 +204,9 @@ class GroupTest(db.Model):
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
     student_tests = relationship("StudentTest", backref="group_test", order_by="StudentTest.id")
 
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
 # class BlackBalance(db.Model):
 #     __tablename__ = "black_balance"
 #     id = Column(Integer, primary_key=True)
