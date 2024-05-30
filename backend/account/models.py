@@ -16,12 +16,15 @@ class Category(db.Model):
     def convert_json(self, location_id=None):
         addition_categories = ConnectedCategory.query.filter(
             ConnectedCategory.main_category_id == self.id).order_by(ConnectedCategory.id).all()
+        addition_categories2 = ConnectedCategory.query.filter(
+            ConnectedCategory.addition_category_id == self.id).order_by(ConnectedCategory.id).all()
         info = {
             "id": self.id,
             'name': self.name,
             "img": self.img,
-            # "is_delete": True if not self.
+            "is_delete": True if not addition_categories or not addition_categories2 else False,
             "number_category": self.number_category,
+            "is_sub": True if addition_categories2 else False,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories],
             "capitals": []
         }
@@ -47,6 +50,8 @@ class ConnectedCategory(db.Model):
             'name': self.first.name,
             'number_category': self.first.number_category,
             "img": self.first.img,
+            "is_delete": True if not self.first else False,
+            "is_sub": True if self.second else False,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories]
         }
         return info
@@ -508,6 +513,7 @@ class Capital(db.Model):
     calendar_month = Column(Integer, ForeignKey("calendarmonth.id"))
     total_down_cost = Column(BigInteger)
     deleted = Column(Boolean, default=False)
+    term_info = relationship("CapitalTerm", backref="capital", order_by="CapitalTerm.id", lazy="select")
 
     def convert_json(self, entire=False, location_id=None):
 
@@ -575,6 +581,14 @@ class CapitalTerm(db.Model):
     def add(self):
         db.session.add(self)
         db.session.commit()
+
+    def convert_json(self,entire=False):
+        return {
+            "capital": self.capital.convert_json(),
+            "date": self.month.date.strftime("%Y-%m"),
+            "down_cost": -self.down_cost,
+            "id": self.id
+        }
 
 
 class CapitalExpenditure(db.Model):

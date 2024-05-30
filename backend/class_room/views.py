@@ -1,6 +1,7 @@
 from app import app, check_password_hash, db, request, jsonify, or_, contains_eager, classroom_server
 from backend.models.models import Users, Roles, CalendarMonth, CalendarDay, CalendarYear, Attendance, AttendanceDays, \
-    Students, Groups, Teachers, StudentCharity, Subjects, SubjectLevels, TeacherBlackSalary, StaffSalary
+    Students, Groups, Teachers, StudentCharity, Subjects, SubjectLevels, TeacherBlackSalary, StaffSalary, \
+    DeletedTeachers
 from backend.functions.utils import api, refresh_age, update_salary, iterate_models, get_json_field, check_exist_id
 from datetime import datetime
 from backend.functions.debt_salary_update import salary_debt
@@ -33,10 +34,6 @@ def login2():
     create token
     :return: logged User datas
     """
-
-    year = datetime.strptime("2024", "%Y")
-    month = datetime.strptime("2024-03", "%Y-%m")
-    db.session.commit()
     if request.method == "POST":
         username = get_json_field('username')
         password = get_json_field('password')

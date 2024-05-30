@@ -79,6 +79,7 @@ class CalendarYear(db.Model):
                                             lazy="select")
     capitals = relationship("Capital", backref="year", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="year", order_by="GroupTest.id")
+    capital_term = relationship("CapitalTerm", backref="year", order_by="CapitalTerm.id", lazy="select")
 
     def convert_json(self, entire=False):
         return {
@@ -132,6 +133,7 @@ class CalendarMonth(db.Model):
                                             lazy="select")
     capitals = relationship("Capital", backref="month", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="month", order_by="GroupTest.id")
+    capital_term = relationship("CapitalTerm", backref="month", order_by="CapitalTerm.id", lazy="select")
 
     def convert_json(self, entire=False):
         return {
@@ -170,6 +172,7 @@ class AccountingPeriod(db.Model):
     book_debts = relationship("CollectedBookPayments", backref="period", lazy="select",
                               order_by="CollectedBookPayments.id")
     capitals = relationship("Capital", backref="period", lazy="select", order_by="Capital.id")
+    capital_term = relationship("CapitalTerm", backref="period", order_by="CapitalTerm.id", lazy="select")
 
 
 class CalendarDay(db.Model):

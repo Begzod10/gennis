@@ -24,14 +24,14 @@ def update_capital(location_id):
                     "calendar_year": calendar_year.id,
                     "capital_id": capital.id,
                     "account_period_id": accounting_period.id,
-                    "down_cost": down_cost,
+                    "down_cost": -down_cost,
 
                 }
                 capex_down = CapitalTerm(**info)
                 capex_down.add()
             all_capex_down = \
                 db.session.query(func.sum(CapitalTerm.down_cost).filter(CapitalTerm.capital_id == capital.id)).first()[0]
-            capital.total_down_cost = all_capex_down
+            capital.total_down_cost = -all_capex_down
             db.session.commit()
 
 
