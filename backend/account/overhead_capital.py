@@ -2,7 +2,7 @@ from app import app, db, jsonify, contains_eager, request, desc, send_file
 from werkzeug.utils import secure_filename
 
 from backend.models.models import Overhead, AccountingPeriod, PaymentTypes, DeletedOverhead, \
-    CalendarMonth, CalendarDay, Category, ConnectedCategory, Capital
+    CalendarMonth, CalendarDay, Category, ConnectedCategory, Capital, CapitalTerm
 from flask_jwt_extended import jwt_required
 from backend.functions.filters import old_current_dates
 from backend.functions.small_info import room_images, checkFile
@@ -15,9 +15,21 @@ from pprint import pprint
 import json
 
 
-@app.route(f'{api}/add_capital_category', methods=['POST', "PUT"])
+@app.route(f'{api}/add_capital_category', methods=['POST', "PUT", "DELETE"])
 @jwt_required()
 def add_capital_category():
+    if request.method == "DELETE":
+        category_id = get_json_field('category_id')
+        connected_category = ConnectedCategory.query.filter(
+            ConnectedCategory.addition_category_id == category_id).first()
+        db.session.delete(connected_category)
+        db.session.commit()
+        Category.query.filter(Category.id == category_id).delete()
+        db.session.commit()
+        return jsonify({
+            "msg": "O'chirildi",
+            "success": True
+        })
     info = request.form.get("info")
     json_file = json.loads(info)
     if 'category_id' in json_file:
@@ -27,7 +39,6 @@ def add_capital_category():
     name = json_file['name']
     number_category = json_file['number_category']
     img = request.files.get('img')
-    print(img)
     url = ""
     if img and checkFile(img.filename):
         app.config['UPLOAD_FOLDER'] = room_images()
@@ -180,7 +191,6 @@ def add_capital(location_id):
             "capital": capital_add.convert_json()
         })
     elif request.method == "PUT":
-        pprint(request.form.get('info'))
         current_year = datetime.now().year
         old_year = datetime.now().year - 1
         month = str(datetime.now().month)
@@ -236,17 +246,13 @@ def add_capital(location_id):
         })
 
 
-# @app.route(f'{api}/capitals_info/<int:location_id>/<int:category_id>')
-# def capitals_info(location_id, category_id):
-#     accounting_period = db.session.query(AccountingPeriod).join(AccountingPeriod.month).options(
-#         contains_eager(AccountingPeriod.month)).order_by(desc(CalendarMonth.id)).first()
-#     update_capital(location_id)
-#     capitals = Capital.query.filter(Capital.location_id == location_id, Capital.category_id == category_id,
-#                                     Capital.account_period_id == accounting_period.id).order_by(Capital.id).all()
-#
-#     return jsonify({
-#         "capital_list": iterate_models(capitals)
-#     })
+@app.route(f'{api}/capital_info/<int:capital_id>')
+@jwt_required()
+def capital_info(capital_id):
+    capital_terms = CapitalTerm.query.filter(CapitalTerm.capital_id == capital_id).order_by(CapitalTerm.id).all()
+    return jsonify({
+        "terms": iterate_models(capital_terms)
+    })
 
 
 @app.route(f'{api}/get_capital_numbers', methods=['POST'])

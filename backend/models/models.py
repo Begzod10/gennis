@@ -79,7 +79,11 @@ class CalendarYear(db.Model):
                                             lazy="select")
     capitals = relationship("Capital", backref="year", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="year", order_by="GroupTest.id")
+
+    capital_term = relationship("CapitalTerm", backref="year", order_by="CapitalTerm.id", lazy="select")
+
     # student_tests = relationship("StudentTest", backref="year", order_by="StudentTest.id")
+
 
     def convert_json(self, entire=False):
         return {
@@ -133,7 +137,11 @@ class CalendarMonth(db.Model):
                                             lazy="select")
     capitals = relationship("Capital", backref="month", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="month", order_by="GroupTest.id")
+
+    capital_term = relationship("CapitalTerm", backref="month", order_by="CapitalTerm.id", lazy="select")
+
     # student_tests = relationship("StudentTest", backref="month", order_by="StudentTest.id")
+
 
     def convert_json(self, entire=False):
         return {
@@ -172,6 +180,7 @@ class AccountingPeriod(db.Model):
     book_debts = relationship("CollectedBookPayments", backref="period", lazy="select",
                               order_by="CollectedBookPayments.id")
     capitals = relationship("Capital", backref="period", lazy="select", order_by="Capital.id")
+    capital_term = relationship("CapitalTerm", backref="period", order_by="CapitalTerm.id", lazy="select")
 
 
 class CalendarDay(db.Model):
@@ -611,22 +620,4 @@ class Professions(db.Model):
         db.session.add(self)
         db.session.commit()
 
-# class TableB(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     # Define attributes for TableB
-#
-#
-# class TableA(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     table_b_id_1 = db.Column(db.Integer, db.ForeignKey('table_b.id'))
-#     table_b_id_2 = db.Column(db.Integer, db.ForeignKey('table_b.id'))
-#     # Define other attributes for TableA
-#
-#     # Define relationships
-#     table_b_1 = db.relationship('TableB', foreign_keys=[table_b_id_1])
-#     table_b_2 = db.relationship('TableB', foreign_keys=[table_b_id_2])
 
-#     order qoshib korish kere
-
-
-# capital table ga misol

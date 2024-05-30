@@ -161,7 +161,7 @@ class StudentTest(db.Model):
     true_answers = Column(Integer)
     false_answers = Column(Integer)
     student_id = Column(Integer, ForeignKey('students.id'))
-    group_test = Column(Integer, ForeignKey('grouptest.id'))
+    group_test_id = Column(Integer, ForeignKey('group_test.id'))
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     level_id = Column(Integer, ForeignKey('subjectlevels.id'))

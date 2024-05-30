@@ -645,7 +645,7 @@ def get_deletedTeachers_location(location_id):
         "role": teacher_role,
         "phone": teacher.user.phone[0].phone,  # Assumes at least one phone number is present
         "reg_date": teacher.user.day.date.strftime("%Y-%m-%d"),
-        "subjects": [subject.name for subject in teacher.subjects]
+        "subjects": [subject.name for subject in teacher.subject]
     } for teacher in teachers]
 
     return jsonify({"teachers": list_teachers})
