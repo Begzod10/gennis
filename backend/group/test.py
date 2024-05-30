@@ -40,6 +40,14 @@ def create_test(group_id):
     })
 
 
+@app.route('/evaluation_test/<int:group_id>', methods=["POST", "GET"])
+def evaluation_test(group_id):
+
+    return jsonify({
+        "status": True
+    })
+
+
 @app.route('/get_subject_date/<int:group_id>', methods=["POST", "GET"])
 def get_subject_date(group_id):
     now = datetime.now()

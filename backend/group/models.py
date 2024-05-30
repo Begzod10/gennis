@@ -202,7 +202,7 @@ class GroupTest(db.Model):
     calendar_year = Column(Integer, ForeignKey('calendaryear.id'))
     calendar_month = Column(Integer, ForeignKey('calendarmonth.id'))
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
-    # student_tests = relationship("StudentTest", backref="group_test", order_by="StudentTest.id")
+    student_tests = relationship("StudentTest", backref="group_test", order_by="StudentTest.id")
 
     def add(self):
         db.session.add(self)
