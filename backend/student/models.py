@@ -165,3 +165,7 @@ class StudentTest(db.Model):
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     level_id = Column(Integer, ForeignKey('subjectlevels.id'))
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
