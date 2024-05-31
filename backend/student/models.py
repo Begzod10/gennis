@@ -104,6 +104,19 @@ class Students(db.Model):
     student_certificate = relationship("StudentCertificate", backref="student", order_by="StudentCertificate.id")
     student_debts = relationship("StudentDebt", backref="student", order_by="StudentDebt.id")
     student_tests = relationship("StudentTest", backref="student", order_by="StudentTest.id")
+    student_calling_info = relationship("StudentCallingInfo", backref="student", order_by="StudentCallingInfo.id")
+
+
+class StudentCallingInfo(db.Model):
+    __tablename__ = "studentcallinginfo"
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey('students.id'))
+    comment = Column(String)
+    day = Column(DateTime)
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
 
 
 class Contract_Students(db.Model):
