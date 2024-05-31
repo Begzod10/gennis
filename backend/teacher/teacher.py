@@ -44,6 +44,7 @@ def analyze(attendances, teacher, type_rating=None):
         for att in attendances:
             ball += att.average
         info["percentage"] = round(ball / len(attendances)) if ball != 0 else 0
+        info['observation_len'] = len(attendances)
         teacher_list.append(info)
     elif type_rating == "deleted_students":
         for att in attendances:
@@ -471,9 +472,6 @@ def make_attendance():
             else:
                 black_salary.total_salary += salary_per_day
                 db.session.commit()
-                if black_salary.paid_money:
-                    black_salary.remaining = black_salary.total_salary - black_salary.paid_money
-                    db.session.commit()
         requests.post(f"{classroom_server}/api/update_student_balance", json={
             "platform_id": student_get.user.id,
             "balance": student_get.user.balance,

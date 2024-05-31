@@ -274,6 +274,22 @@ def update_all_datas():
         add_reason.add()
 
 
+def filter_month_day():
+    current_year = datetime.now().year
+    old_year = datetime.now().year - 1
+    month = str(datetime.now().month)
+    month_get = get_json_field('month')
+    day = get_json_field('day')
+    if month_get == "12" and month == "01":
+        current_year = old_year
+    if not month_get:
+        month_get = month
+    date_day = datetime.strptime(str(current_year) + "-" + str(month_get) + "-" + str(day), "%Y-%m-%d")
+    date_month = datetime.strptime(str(current_year) + "-" + str(month_get), "%Y-%m")
+    date_year = datetime.strptime(str(current_year), "%Y")
+    return date_year, date_month,  date_day
+
+
 def find_calendar_date(date_day=None, date_month=None, date_year=None):
     """Find or parse calendar date entities."""
     if date_day:

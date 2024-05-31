@@ -2,12 +2,13 @@ from app import app, get_jwt_identity, jsonify, jwt_required, db, request, class
 
 from datetime import datetime
 
-from backend.functions.utils import find_calendar_date, iterate_models, get_json_field, api
+from backend.functions.utils import find_calendar_date, iterate_models, get_json_field, api, filter_month_day
 from backend.models.models import Users, Week, Groups, Group_Room_Week, \
     CalendarMonth, CalendarYear, LessonPlan, LessonPlanStudents, or_, CalendarDay
 from .models import TeacherObservation, ObservationOptions, ObservationInfo, \
     TeacherObservationDay, Teachers
 from pprint import pprint
+from backend.functions.filters import old_current_dates
 import requests
 
 
@@ -78,40 +79,63 @@ def observe_info():
     })
 
 
-
-@app.route(f'{api}/groups_to_observe')
+@app.route(f'{api}/groups_to_observe', defaults={"location_id": None}, methods=['POST', 'GET'])
+@app.route(f'{api}/groups_to_observe/<int:location_id>', methods=['POST', 'GET'])
 @jwt_required()
-def groups_to_observe():
+def groups_to_observe(location_id):
     identity = get_jwt_identity()
-    user = Users.query.filter(Users.user_id == identity).first()
-    current_date = datetime.now()
-    week_day_name = current_date.strftime("%A")
+    if not location_id:
+        user = Users.query.filter(Users.user_id == identity).first()
+        location_id = user.location_id
+    else:
+        location_id = location_id
     teacher = Teachers.query.filter(Teachers.user_id == user.id).first()
-    get_week_day = Week.query.filter(Week.eng_name == week_day_name,
-                                     Week.location_id == user.location_id).first()
+
+    if request.method == "POST":
+        date_year, date_month, date_day = filter_month_day()
+
+        calendar_year, calendar_month, calendar_day = find_calendar_date(date_day=date_day, date_year=date_year,
+                                                                         date_month=date_month)
+
+        week_day_name = calendar_day.date.strftime("%A")
+        get_week_day = Week.query.filter(Week.eng_name == week_day_name,
+                                         Week.location_id == location_id).first()
+    else:
+        current_date = datetime.now()
+        week_day_name = current_date.strftime("%A")
+
+        get_week_day = Week.query.filter(Week.eng_name == week_day_name,
+                                         Week.location_id == location_id).first()
 
     groups = Groups.query.join(Groups.time_table).filter(
         Group_Room_Week.week_id == get_week_day.id,
-        # Group_Room_Week.week_id == 8,
         Groups.status == True,
         Groups.location_id == user.location_id,
         Groups.teacher_id != teacher.id,
     ).filter(or_(Groups.deleted == False, Groups.deleted == None)).order_by(Groups.id).all()
-
-    return jsonify({
-        "groups": iterate_models(groups, entire=True)
-    })
+    if request.method == "GET":
+        return jsonify({
+            "groups": iterate_models(groups, entire=True),
+            "observation_tools": old_current_dates(observation=True)
+        })
+    else:
+        return jsonify({
+            "groups": iterate_models(groups, entire=True),
+        })
 
 
 # @app.route(f'{api}/teacher_observe/<int:teacher_id>/', defaults={"group_id": None}, methods=['POST', 'GET'])
 @app.route(f'{api}/teacher_observe/<int:group_id>', methods=['POST', 'GET'])
 @jwt_required()
 def teacher_observe(group_id):
-    calendar_year, calendar_month, calendar_day = find_calendar_date()
     identity = get_jwt_identity()
     user = Users.query.filter_by(user_id=identity).first()
     group = Groups.query.filter(Groups.id == group_id).first()
     if request.method == "POST":
+        date_year, date_month, date_day = filter_month_day()
+
+        calendar_year, calendar_month, calendar_day = find_calendar_date(date_day=date_day, date_year=date_year,
+                                                                         date_month=date_month)
         teacher_observation_day = TeacherObservationDay.query.filter(
             TeacherObservationDay.teacher_id == group.teacher_id,
             TeacherObservationDay.calendar_day == calendar_day.id, TeacherObservationDay.group_id == group.id,
@@ -153,6 +177,10 @@ def teacher_observe(group_id):
         return jsonify({
             "msg": "Teacher has been observed",
             "success": True
+        })
+    else:
+        return jsonify({
+            "observation_tools": old_current_dates(group_id=group_id, observation=True)
         })
 
 
@@ -228,6 +256,7 @@ def observed_group_info(group_id):
     day = get_json_field('day')
     month = get_json_field('month')
     year = get_json_field('year')
+    print(day)
     date = datetime.strptime(year + "-" + month + "-" + day, "%Y-%m-%d")
     calendar_day = CalendarDay.query.filter(CalendarDay.date == date).first()
     observation_list = []
@@ -267,7 +296,7 @@ def observed_group_info(group_id):
 
                 })
             observation_list.append(info)
-
+    pprint(observation_list)
     return jsonify({
         "info": observation_list,
         "observation_options": iterate_models(observation_options),

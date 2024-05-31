@@ -595,7 +595,7 @@ def deleted_reg_students_filter(location_id):
     return filters
 
 
-def old_current_dates(group_id=0):
+def old_current_dates(group_id=0, observation=False):
     """
 
     :param group_id: Groups primary key
@@ -637,7 +637,8 @@ def old_current_dates(group_id=0):
     old_days.sort()
     if group_id != 0:
         day_list = weekday_from_date(day_list, current_month, current_year, week_list)
-    if current_day > 18:
+        old_days = weekday_from_date(old_days, old_month, old_year, week_list)
+    if not observation:
         data = [
             {
                 "name": calendar_month.date.strftime("%h"),
@@ -658,6 +659,7 @@ def old_current_dates(group_id=0):
                 "days": old_days
             }
         ]
+
     return data
 
 

@@ -128,7 +128,7 @@ def refresh():
         "profile_photo": username_sign.photo_profile,
         "observer": username_sign.observer,
         "location_id": username_sign.location_id,
-        "teacher_info": data.json() if data else {}
+        "teacher_info": data.convert_json() if data else {}
 
     })
 

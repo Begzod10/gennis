@@ -105,6 +105,21 @@ class LessonPlan(db.Model):
         if self.students:
             for student in self.students:
                 info['students'].append(student.convert_json())
+            if len(self.students) != len(students):
+                students = db.session.query(Students).join(Students.group).options(
+                    contains_eager(Students.group)).filter(
+                    Groups.id == self.group_id, ~Students.id.in_([st.id for st in self.students])).order_by(
+                    Students.id).all()
+                for student in students:
+                    student_info = {
+                        "comment": "",
+                        "student": {
+                            "id": student.id,
+                            "name": student.user.name,
+                            "surname": student.user.surname
+                        }
+                    }
+                    info['students'].append(student_info)
         else:
             for student in students:
                 student_info = {
