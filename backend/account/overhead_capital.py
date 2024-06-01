@@ -13,6 +13,7 @@ import os
 from docx import Document
 from pprint import pprint
 import json
+from backend.models.models import func
 
 
 @app.route(f'{api}/add_capital_category', methods=['POST', "PUT", "DELETE"])
@@ -84,6 +85,7 @@ def add_capital_category():
 def get_capital_category(category_id, location_id):
     category = Category.query.filter(Category.id == category_id).first()
     update_capital(location_id)
+
     if request.method == "POST":
         info = request.form.get("info")
         json_file = json.loads(info)
@@ -106,7 +108,7 @@ def get_capital_category(category_id, location_id):
         })
     return jsonify({
         'category': category.convert_json(location_id),
-        "capital_tools": old_current_dates()
+        "capital_tools": old_current_dates(),
     })
 
 
@@ -120,15 +122,23 @@ def deleted_capitals(category_id, location_id):
     })
 
 
-@app.route(f'{api}/get_capital_categories', methods=['GET'])
+@app.route(f'{api}/get_capital_categories/<int:location_id>', methods=['GET'])
 @jwt_required()
-def get_capital_categories():
+def get_capital_categories(location_id):
     categories = Category.query.filter(Category.number == 1).order_by(Category.id).all()
     list = []
+    total_down_cost = 0
     for category in categories:
         list.append(category.convert_json())
+        all_capex_down = \
+            db.session.query(func.sum(Capital.total_down_cost).filter(Capital.category_id == category.id,
+                                                                      Capital.location_id == location_id,
+                                                                      Capital.deleted != True)).first()[0]
+        total_down_cost += all_capex_down if all_capex_down else  0
+
     return jsonify({
-        'categories': list
+        'categories': list,
+        "total_down_cost": total_down_cost
     })
 
 

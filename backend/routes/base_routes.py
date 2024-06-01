@@ -399,6 +399,8 @@ def register_staff():
         role = Roles.query.filter(Roles.type_role == "admin").first()
     elif selectedSubjects == "Muxarir":
         role = Roles.query.filter(Roles.type_role == "muxarir").first()
+    elif selectedSubjects == "Buxgalter":
+        role = Roles.query.filter(Roles.type_role == "accountant").first()
     else:
         role = Roles.query.filter(Roles.type_role == "user").first()
     add = Users(name=name, surname=surname, username=username, password=hash,

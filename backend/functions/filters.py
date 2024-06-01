@@ -7,7 +7,7 @@ from app import app, jsonify, contains_eager, db, desc
 from backend.functions.utils import find_calendar_date, number_of_days_in_month, api, iterate_models
 from backend.models.models import Locations, AccountingPeriod, Teachers, CalendarMonth, EducationLanguage, CalendarDay, \
     CalendarYear, PaymentTypes, CourseTypes, Subjects, Students, LessonPlan, Users, Week, DeletedStudents, Professions, \
-    Group_Room_Week, RegisterDeletedStudents, Groups, Rooms
+    Group_Room_Week, RegisterDeletedStudents, Groups, Rooms, GroupReason
 
 
 @app.route(f'{api}/block_information2', defaults={"location_id": None})
@@ -57,6 +57,9 @@ def block_information2(location_id):
         "name": day.name
     } for day in days]
     calendar_years = CalendarYear.query.order_by(CalendarYear.id).all()
+
+    group_reasons = GroupReason.query.order_by(GroupReason.id).all()
+
     data = {
         "locations": locations_list,
         "subjects": subject_list,
@@ -65,7 +68,8 @@ def block_information2(location_id):
         "payment_types": payment_types_list,
         "rooms": room_list,
         "days": day_list,
-        "years": iterate_models(calendar_years)
+        "years": iterate_models(calendar_years),
+        "group_reasons": iterate_models(group_reasons)
     }
     return jsonify({
         "data": data

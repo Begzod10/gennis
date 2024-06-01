@@ -95,6 +95,12 @@ class GroupReason(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def convert_json(self, entire=False):
+        return {
+            "id": self.id,
+            "name": self.reason
+        }
+
 
 class AttendanceHistoryStudent(db.Model):
     __tablename__ = "attendancehistorystudent"

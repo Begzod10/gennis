@@ -1,9 +1,9 @@
 from app import app, db, desc, request, contains_eager, and_, jsonify, func
 from flask_jwt_extended import jwt_required
 from backend.models.models import AccountingPeriod, CalendarMonth, PaymentTypes, StudentPayments, Students, CalendarDay, \
-    StaffSalaries, TeacherSalaries, CenterBalanceOverhead, Overhead, CalendarYear, CapitalExpenditure, BranchPayment, \
-    AccountingInfo, DeletedStudentPayments, DeletedOverhead, DeletedTeacherSalaries, DeletedCapitalExpenditure, \
-    DeletedStaffSalaries, Users, Teachers, CenterBalance, BookPayments
+    StaffSalaries, TeacherSalaries, CenterBalanceOverhead, Overhead, CalendarYear, BranchPayment, \
+    AccountingInfo, DeletedStudentPayments, DeletedOverhead, DeletedTeacherSalaries, \
+    DeletedStaffSalaries, Users, Teachers, CenterBalance, BookPayments, Capital
 from backend.models.settings import sum_money
 from pprint import pprint
 from backend.functions.utils import get_json_field, api, find_calendar_date
@@ -251,19 +251,19 @@ def account_info(type_filter):
 
         type_account = ''
         if not type_filter:
-            capital = CapitalExpenditure.query.filter(CapitalExpenditure.location_id == location,
-                                                      CapitalExpenditure.account_period_id == accounting_period,
-                                                      ).order_by(
-                desc(CapitalExpenditure.id))
+            capital = Capital.query.filter(Capital.location_id == location,
+                                           Capital.account_period_id == accounting_period,
+                                           ).order_by(
+                desc(Capital.id)).all()
         else:
-            capital = CapitalExpenditure.query.filter(CapitalExpenditure.location_id == location,
-                                                      ).order_by(
-                desc(CapitalExpenditure.id))
+            capital = Capital.query.filter(Capital.location_id == location,
+                                           ).order_by(
+                desc(Capital.id)).all()
 
         payments_list = [{
             "id": over.id,
-            "name": over.item_name,
-            "price": over.item_sum,
+            "name": over.name,
+            "price": over.price,
             "typePayment": over.payment_type.name,
             "date": over.day.date.strftime("%Y-%m-%d"),
             "day": str(over.calendar_day),
@@ -511,14 +511,16 @@ def account_info_deleted(type_filter):
     if type_account == "capital":
         type_account = ''
         if not type_filter:
-            capital = DeletedCapitalExpenditure.query.filter(DeletedCapitalExpenditure.location_id == location,
-                                                             DeletedCapitalExpenditure.account_period_id == accounting_period,
-                                                             ).order_by(
-                DeletedCapitalExpenditure.id)
+            capital = Capital.query.filter(Capital.location_id == location,
+                                           Capital.account_period_id == accounting_period,
+                                           Capital.deleted == True
+                                           ).order_by(
+                Capital.id).all()
         else:
-            capital = DeletedCapitalExpenditure.query.filter(DeletedCapitalExpenditure.location_id == location,
-                                                             ).order_by(
-                DeletedCapitalExpenditure.id)
+            capital = Capital.query.filter(Capital.location_id == location,
+                                           Capital.deleted == True
+                                           ).order_by(
+                Capital.id).all()
 
         payments_list = [
             {
@@ -568,10 +570,11 @@ def account_details(location_id):
             desc(StudentPayments.id)).all()
 
         all_payment = db.session.query(
-            func.sum(StudentPayments.payment_sum)).join(CalendarDay, CalendarDay.id == StudentPayments.calendar_day).filter(
-                and_(CalendarDay.date >= ot, CalendarDay.date <= do, StudentPayments.location_id == location_id,
-                     StudentPayments.payment_type_id == payment_type.id, StudentPayments.payment == True,
-                     )).first()[0] if student_payments else 0
+            func.sum(StudentPayments.payment_sum)).join(CalendarDay,
+                                                        CalendarDay.id == StudentPayments.calendar_day).filter(
+            and_(CalendarDay.date >= ot, CalendarDay.date <= do, StudentPayments.location_id == location_id,
+                 StudentPayments.payment_type_id == payment_type.id, StudentPayments.payment == True,
+                 )).first()[0] if student_payments else 0
 
         teacher_salaries = db.session.query(TeacherSalaries).join(TeacherSalaries.day).options(
             contains_eager(TeacherSalaries.day)).filter(
@@ -636,9 +639,9 @@ def account_details(location_id):
         branch_payments_all = db.session.query(
             func.sum(BranchPayment.payment_sum
                      )).join(CalendarDay, CalendarDay.id == BranchPayment.calendar_day).filter(
-                and_(CalendarDay.date >= ot, CalendarDay.date <= do, BranchPayment.location_id == location_id,
-                     BranchPayment.payment_type_id == payment_type.id
-                     )).first()[0] if branch_payments else 0
+            and_(CalendarDay.date >= ot, CalendarDay.date <= do, BranchPayment.location_id == location_id,
+                 BranchPayment.payment_type_id == payment_type.id
+                 )).first()[0] if branch_payments else 0
 
         center_balance_overhead = db.session.query(CenterBalanceOverhead).join(CenterBalanceOverhead.day).options(
             contains_eager(CenterBalanceOverhead.day)).filter(CenterBalanceOverhead.location_id == location_id,
@@ -651,23 +654,23 @@ def account_details(location_id):
         center_balance_all = db.session.query(
             func.sum(CenterBalanceOverhead.payment_sum
                      )).join(CalendarDay, CalendarDay.id == CenterBalanceOverhead.calendar_day).filter(
-                and_(CalendarDay.date >= ot, CalendarDay.date <= do, CenterBalanceOverhead.location_id == location_id,
-                     CenterBalanceOverhead.payment_type_id == payment_type.id
-                     )).first()[0] if center_balance_overhead else 0
+            and_(CalendarDay.date >= ot, CalendarDay.date <= do, CenterBalanceOverhead.location_id == location_id,
+                 CenterBalanceOverhead.payment_type_id == payment_type.id
+                 )).first()[0] if center_balance_overhead else 0
 
-        capitals = db.session.query(CapitalExpenditure).join(CapitalExpenditure.day).options(
-            contains_eager(CapitalExpenditure.day)).filter(
-            and_(CalendarDay.date >= ot, CalendarDay.date <= do, CapitalExpenditure.location_id == location_id,
-                 CapitalExpenditure.payment_type_id == payment_type.id
+        capitals = db.session.query(Capital).join(Capital.day).options(
+            contains_eager(Capital.day)).filter(
+            and_(CalendarDay.date >= ot, CalendarDay.date <= do, Capital.location_id == location_id,
+                 Capital.payment_type_id == payment_type.id
                  )).order_by(
-            desc(CapitalExpenditure.id)).all()
+            desc(Capital.id)).all()
 
         all_capital = db.session.query(
-            func.sum(CapitalExpenditure.item_sum
-                     )).join(CalendarDay, CalendarDay.id == CapitalExpenditure.calendar_day).filter(
-                and_(CalendarDay.date >= ot, CalendarDay.date <= do, CapitalExpenditure.location_id == location_id,
-                     CapitalExpenditure.payment_type_id == payment_type.id
-                     )).first()[0] if capitals else 0
+            func.sum(Capital.price
+                     )).join(CalendarDay, CalendarDay.id == Capital.calendar_day).filter(
+            and_(CalendarDay.date >= ot, CalendarDay.date <= do, Capital.location_id == location_id,
+                 Capital.payment_type_id == payment_type.id
+                 )).first()[0] if capitals else 0
 
         payments_list = [{
             "id": payment.id,
@@ -723,8 +726,8 @@ def account_details(location_id):
         ]
         capital_list = [{
             "id": salary.id,
-            "name": salary.item_name,
-            "payment": salary.item_sum,
+            "name": salary.name,
+            "payment": salary.price,
             "date": salary.day.date.strftime('%Y-%m-%d')
         } for salary in capitals]
 
@@ -851,9 +854,9 @@ def get_location_money(location_id):
             CenterBalanceOverhead.account_period_id == accounting_period.id,
             CenterBalanceOverhead.deleted == False,
             CenterBalanceOverhead.payment_type_id == payment_type.id).first()
-        capital = sum_money(CapitalExpenditure.item_sum, CapitalExpenditure.account_period_id,
-                            accounting_period.id, CapitalExpenditure.location_id, location_id,
-                            CapitalExpenditure.payment_type_id, payment_type.id,
+        capital = sum_money(Capital.price, Capital.account_period_id,
+                            accounting_period.id, Capital.location_id, location_id,
+                            Capital.payment_type_id, payment_type.id,
                             )
         if branch_payments[0]:
             branch_payments = branch_payments[0]

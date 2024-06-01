@@ -170,108 +170,118 @@ def update_all_datas():
     new_month = datetime.strptime(current_month, "%Y-%m")
     old_month = new_month - relativedelta(month=1)
 
-    location1 = "Xo'jakent"
-    location2 = "Gazalkent"
-    location3 = "Chirchiq"
-    location4 = "Sergeli"
-    location5 = "Nurafshon"
-    location_1 = Locations.query.filter(Locations.name == location1).first()
-    if not location_1:
-        location_1 = Locations(name=location1, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
-                               calendar_month=calendar_month.id)
-        db.session.add(location_1)
-        db.session.commit()
-    location_2 = Locations.query.filter(Locations.name == location2).first()
-    if not location_2:
-        location_2 = Locations(name=location2, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
-                               calendar_month=calendar_month.id)
-        db.session.add(location_2)
-        db.session.commit()
+    # location1 = "Xo'jakent"
+    # location2 = "Gazalkent"
+    # location3 = "Chirchiq"
+    # location4 = "Sergeli"
+    # location5 = "Nurafshon"
+    # location_1 = Locations.query.filter(Locations.name == location1).first()
+    # if not location_1:
+    #     location_1 = Locations(name=location1, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
+    #                            calendar_month=calendar_month.id)
+    #     db.session.add(location_1)
+    #     db.session.commit()
+    # location_2 = Locations.query.filter(Locations.name == location2).first()
+    # if not location_2:
+    #     location_2 = Locations(name=location2, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
+    #                            calendar_month=calendar_month.id)
+    #     db.session.add(location_2)
+    #     db.session.commit()
+    #
+    # location_3 = Locations.query.filter(Locations.name == location3).first()
+    # if not location_3:
+    #     location_3 = Locations(name=location3, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
+    #                            calendar_month=calendar_month.id)
+    #     db.session.add(location_3)
+    #     db.session.commit()
+    # location_4 = Locations.query.filter(Locations.name == location4).first()
+    # if not location_4:
+    #     location_4 = Locations(name=location4, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
+    #                            calendar_month=calendar_month.id)
+    #     db.session.add(location_4)
+    #     db.session.commit()
+    #
+    # location_5 = Locations.query.filter(Locations.name == location5).first()
+    # if not location_5:
+    #     location_5 = Locations(name=location5, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
+    #                            calendar_month=calendar_month.id)
+    #     db.session.add(location_5)
+    #     db.session.commit()
+    #
+    # click = "click"
+    # cash = "cash"
+    # bank = "bank"
+    #
+    # cash_get = PaymentTypes.query.filter(PaymentTypes.name == cash).first()
+    # if not cash_get:
+    #     cash_get = PaymentTypes(name=cash)
+    #     db.session.add(cash_get)
+    #     db.session.commit()
+    # click_get = PaymentTypes.query.filter(PaymentTypes.name == click).first()
+    # if not click_get:
+    #     click_get = PaymentTypes(name=click)
+    #     db.session.add(click_get)
+    #     db.session.commit()
+    #
+    # bank_get = PaymentTypes.query.filter(PaymentTypes.name == bank).first()
+    # if not bank_get:
+    #     bank_get = PaymentTypes(name=bank)
+    #     db.session.add(bank_get)
+    #     db.session.commit()
+    #
+    # methodist = Professions.query.filter(Professions.name == "Methodist").first()
+    # if not methodist:
+    #     methodist = Professions(name="Methodist")
+    #     methodist.add()
+    #
+    # methodist = Roles.query.filter(Roles.type_role == "methodist", Roles.role == "d32q69n53").first()
+    # if not methodist:
+    #     methodist = Roles(type_role="methodist", role="d32q69n53")
+    #     methodist.add()
+    #
+    # editor = Professions.query.filter(Professions.name == "Muxarir").first()
+    # if not editor:
+    #     editor = Professions(name="Muxarir")
+    #     editor.add()
+    #
+    # editor = Roles.query.filter(Roles.type_role == "muxarir", Roles.role == "n41c88z45").first()
+    # if not editor:
+    #     editor = Roles(type_role="muxarir", role="n41c88z45")
+    #     editor.add()
+    #
+    # add_reason = GroupReason.query.filter(GroupReason.reason == "O'qituvchi yoqmadi").first()
+    # if not add_reason:
+    #     add_reason = GroupReason(reason="O'qituvchi yoqmadi")
+    #     add_reason.add()
+    #
+    # add_reason = GroupReason.query.filter(GroupReason.reason == "Pul oilaviy sharoit").first()
+    # if not add_reason:
+    #     add_reason = GroupReason(reason="Pul oilaviy sharoit")
+    #     add_reason.add()
+    # add_reason = GroupReason.query.filter(GroupReason.reason == "O'quvchi o'qishni eplolmadi").first()
+    # if not add_reason:
+    #     add_reason = GroupReason(reason="O'quvchi o'qishni eplolmadi")
+    #     add_reason.add()
+    #
+    # add_reason = GroupReason.query.filter(GroupReason.reason == "Boshqa").first()
+    # if not add_reason:
+    #     add_reason = GroupReason(reason="Boshqa")
+    #     add_reason.add()
+    #
+    # add_reason = GroupReason.query.filter(GroupReason.reason == "Kursni tamomladi").first()
+    # if not add_reason:
+    #     add_reason = GroupReason(reason="Kursni tamomladi")
+    #     add_reason.add()
 
-    location_3 = Locations.query.filter(Locations.name == location3).first()
-    if not location_3:
-        location_3 = Locations(name=location3, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
-                               calendar_month=calendar_month.id)
-        db.session.add(location_3)
-        db.session.commit()
-    location_4 = Locations.query.filter(Locations.name == location4).first()
-    if not location_4:
-        location_4 = Locations(name=location4, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
-                               calendar_month=calendar_month.id)
-        db.session.add(location_4)
-        db.session.commit()
-
-    location_5 = Locations.query.filter(Locations.name == location5).first()
-    if not location_5:
-        location_5 = Locations(name=location5, calendar_day=calendar_day.id, calendar_year=calendar_year.id,
-                               calendar_month=calendar_month.id)
-        db.session.add(location_5)
-        db.session.commit()
-
-    click = "click"
-    cash = "cash"
-    bank = "bank"
-
-    cash_get = PaymentTypes.query.filter(PaymentTypes.name == cash).first()
-    if not cash_get:
-        cash_get = PaymentTypes(name=cash)
-        db.session.add(cash_get)
-        db.session.commit()
-    click_get = PaymentTypes.query.filter(PaymentTypes.name == click).first()
-    if not click_get:
-        click_get = PaymentTypes(name=click)
-        db.session.add(click_get)
-        db.session.commit()
-
-    bank_get = PaymentTypes.query.filter(PaymentTypes.name == bank).first()
-    if not bank_get:
-        bank_get = PaymentTypes(name=bank)
-        db.session.add(bank_get)
-        db.session.commit()
-
-    methodist = Professions.query.filter(Professions.name == "Methodist").first()
+    methodist = Professions.query.filter(Professions.name == "Buxgalter").first()
     if not methodist:
-        methodist = Professions(name="Methodist")
+        methodist = Professions(name="Buxgalter")
         methodist.add()
 
-    methodist = Roles.query.filter(Roles.type_role == "methodist", Roles.role == "d32q69n53").first()
+    methodist = Roles.query.filter(Roles.type_role == "accountant", Roles.role == "ak47a76m69").first()
     if not methodist:
-        methodist = Roles(type_role="methodist", role="d32q69n53")
+        methodist = Roles(type_role="accountant", role="ak47a76m69")
         methodist.add()
-
-    editor = Professions.query.filter(Professions.name == "Muxarir").first()
-    if not editor:
-        editor = Professions(name="Muxarir")
-        editor.add()
-
-    editor = Roles.query.filter(Roles.type_role == "muxarir", Roles.role == "n41c88z45").first()
-    if not editor:
-        editor = Roles(type_role="muxarir", role="n41c88z45")
-        editor.add()
-
-    add_reason = GroupReason.query.filter(GroupReason.reason == "O'qituvchi yoqmadi").first()
-    if not add_reason:
-        add_reason = GroupReason(reason="O'qituvchi yoqmadi")
-        add_reason.add()
-
-    add_reason = GroupReason.query.filter(GroupReason.reason == "Pul oilaviy sharoit").first()
-    if not add_reason:
-        add_reason = GroupReason(reason="Pul oilaviy sharoit")
-        add_reason.add()
-    add_reason = GroupReason.query.filter(GroupReason.reason == "O'quvchi o'qishni eplolmadi").first()
-    if not add_reason:
-        add_reason = GroupReason(reason="O'quvchi o'qishni eplolmadi")
-        add_reason.add()
-
-    add_reason = GroupReason.query.filter(GroupReason.reason == "Boshqa").first()
-    if not add_reason:
-        add_reason = GroupReason(reason="Boshqa")
-        add_reason.add()
-
-    add_reason = GroupReason.query.filter(GroupReason.reason == "Kursni tamomladi").first()
-    if not add_reason:
-        add_reason = GroupReason(reason="Kursni tamomladi")
-        add_reason.add()
 
 
 def filter_month_day():
@@ -287,7 +297,7 @@ def filter_month_day():
     date_day = datetime.strptime(str(current_year) + "-" + str(month_get) + "-" + str(day), "%Y-%m-%d")
     date_month = datetime.strptime(str(current_year) + "-" + str(month_get), "%Y-%m")
     date_year = datetime.strptime(str(current_year), "%Y")
-    return date_year, date_month,  date_day
+    return date_year, date_month, date_day
 
 
 def find_calendar_date(date_day=None, date_month=None, date_year=None):

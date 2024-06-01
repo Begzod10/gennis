@@ -7,6 +7,7 @@ from app import db, desc, contains_eager, session
 from backend.models.models import func
 
 
+
 def update_capital(location_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     capitals = Capital.query.filter(Capital.location_id == location_id).order_by(Capital.id).all()

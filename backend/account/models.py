@@ -2,6 +2,7 @@ from backend.models.models import Column, Integer, ForeignKey, String, Boolean, 
     contains_eager, BigInteger, JSON
 from backend.group.models import Groups
 from backend.student.models import Students
+from backend.models.models import func
 
 
 class Category(db.Model):
@@ -18,6 +19,10 @@ class Category(db.Model):
             ConnectedCategory.main_category_id == self.id).order_by(ConnectedCategory.id).all()
         addition_categories2 = ConnectedCategory.query.filter(
             ConnectedCategory.addition_category_id == self.id).order_by(ConnectedCategory.id).all()
+        all_capex_down = \
+            db.session.query(func.sum(Capital.total_down_cost).filter(Capital.category_id == self.id,
+                                                                      Capital.location_id == location_id,
+                                                                      Capital.deleted != True)).first()[0]
         info = {
             "id": self.id,
             'name': self.name,
@@ -26,7 +31,8 @@ class Category(db.Model):
             "number_category": self.number_category,
             "is_sub": True if addition_categories2 else False,
             'addition_categories': [addition_category.convert_json() for addition_category in addition_categories],
-            "capitals": []
+            "capitals": [],
+            "total_down_cost": all_capex_down
         }
         for capital in self.capitals:
             if not capital.deleted:

@@ -1,3 +1,5 @@
+import pprint
+
 from backend.models.models import Column, Integer, ForeignKey, String, relationship, DateTime, db, desc, contains_eager
 from backend.student.models import Students
 from backend.group.models import Groups
@@ -80,6 +82,7 @@ class LessonPlan(db.Model):
         students = db.session.query(Students).join(Students.group).options(
             contains_eager(Students.group)).filter(
             Groups.id == self.group_id).order_by(Students.id).all()
+
         info = {
             "id": self.id,
             "objective": self.objective,
@@ -104,11 +107,13 @@ class LessonPlan(db.Model):
         }
         if self.students:
             for student in self.students:
+
                 info['students'].append(student.convert_json())
+            pprint.pprint(info['students'])
             if len(self.students) != len(students):
                 students = db.session.query(Students).join(Students.group).options(
                     contains_eager(Students.group)).filter(
-                    Groups.id == self.group_id, ~Students.id.in_([st.id for st in self.students])).order_by(
+                    Groups.id == self.group_id, ~Students.id.in_([st.student.id for st in self.students])).order_by(
                     Students.id).all()
                 for student in students:
                     student_info = {
