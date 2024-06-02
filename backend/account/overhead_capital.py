@@ -14,6 +14,7 @@ from docx import Document
 from pprint import pprint
 import json
 from backend.models.models import func
+import uuid
 
 
 @app.route(f'{api}/add_capital_category', methods=['POST', "PUT", "DELETE"])
@@ -134,7 +135,7 @@ def get_capital_categories(location_id):
             db.session.query(func.sum(Capital.total_down_cost).filter(Capital.category_id == category.id,
                                                                       Capital.location_id == location_id,
                                                                       Capital.deleted != True)).first()[0]
-        total_down_cost += all_capex_down if all_capex_down else  0
+        total_down_cost += all_capex_down if all_capex_down else 0
 
     return jsonify({
         'categories': list,
@@ -280,7 +281,10 @@ def get_capital_numbers():
 
     document.add_heading(f'{category.name} ga kiruvchi buyumlar:', 0)
     print(capitals)
-    table = document.add_table(rows=len(capitals) - 1, cols=2)
+    if len(capitals) > 1:
+        table = document.add_table(rows=len(capitals) - 1, cols=2)
+    else:
+        table = document.add_table(rows=len(capitals), cols=2)
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = 'Name'
     hdr_cells[1].text = 'Number'
@@ -289,11 +293,13 @@ def get_capital_numbers():
         row_cells = table.add_row().cells
 
         row_cells[0].text = capital.name
-        row_cells[1].text = capital.number
+        row_cells[1].text = f"{category.number_category}/{capital.number}"
     document.add_page_break()
-
-    document.save(f'frontend/build/static/contract_folder/{category.name}.docx')
-    return send_file(f"frontend/build/static/contract_folder/{category.name}.docx", mimetype=None, as_attachment=False,
+    id = uuid.uuid1()
+    user_id = id.hex[0:15]
+    document.save(f'frontend/build/static/contract_folder/{category.name}{user_id}.docx')
+    return send_file(f"frontend/build/static/contract_folder/{category.name}{user_id}.docx", mimetype=None,
+                     as_attachment=False,
                      download_name=category.name, conditional=True, etag=True,
                      last_modified=None, max_age=None)
 
