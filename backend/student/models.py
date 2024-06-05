@@ -113,6 +113,7 @@ class StudentCallingInfo(db.Model):
     student_id = Column(Integer, ForeignKey('students.id'))
     comment = Column(String)
     day = Column(DateTime)
+    date = Column(DateTime)
 
     def add(self):
         db.session.add(self)

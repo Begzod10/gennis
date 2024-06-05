@@ -4,7 +4,10 @@ from backend.functions.utils import api, find_calendar_date, get_json_field, des
 from backend.models.models import db, Subjects
 from .models import Lead, LeadInfos
 from datetime import datetime
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
+from backend.student.calling_to_students import change_statistics
+from backend.models.models import Users
 
 
 @app.route(f'{api}/register_lead', methods=['POST'])
@@ -44,6 +47,7 @@ def register_lead():
 @jwt_required()
 def get_leads_location(status, location_id):
     if status == "news":
+        change_statistics()
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False).order_by(desc(Lead.id)).all()
         return jsonify({
             "leads": iterate_models(leads)
@@ -58,16 +62,153 @@ def get_leads_location(status, location_id):
 @app.route(f'{api}/lead_crud/<int:pm>', methods=['POST', "GET", "DELETE", "PUT"])
 @jwt_required()
 def crud_lead(pm):
+    user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    today = datetime.today()
+    date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     lead = Lead.query.filter(Lead.id == pm).first()
     if request.method == "DELETE":
         comment = get_json_field('comment')
+        location_id = get_json_field('location_id')
+        status = get_json_field('status')
+
         lead.deleted = True
         lead.comment = comment
         db.session.commit()
+        if status == "green" or status == "yellow":
+            task_type = Tasks.query.filter(Tasks.name == 'leads').first()
+            task_statistics = TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                                           TasksStatistics.location_id == location_id,
+                                                           TasksStatistics.task_id == task_type.id
+                                                           ).first()
+            if task_statistics.completed_tasks == 0:
+                completed_tasks_statistics = 0
+            else:
+                completed_tasks_statistics = task_statistics.completed_tasks - 1
+            TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                         TasksStatistics.location_id == location_id,
+                                         TasksStatistics.task_id == task_type.id
+                                         ).update({
+                'in_progress_tasks': task_statistics.in_progress_tasks - 1,
+                'completed_tasks': completed_tasks_statistics
+            })
+            db.session.commit()
+            updated_task_statistics = TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                                                   TasksStatistics.location_id == location_id,
+                                                                   TasksStatistics.task_id == task_type.id
+                                                                   ).first()
+            if updated_task_statistics.completed_tasks == 0:
+                percentage = 0
+            else:
+                percentage = (updated_task_statistics.completed_tasks / updated_task_statistics.in_progress_tasks) * 100
+            TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                         TasksStatistics.location_id == location_id,
+                                         TasksStatistics.task_id == task_type.id
+                                         ).update({
+                'completed_tasks_percentage': percentage
+            })
+            db.session.commit()
+
+            daily_tasks = TaskDailyStatistics.query.filter(TaskDailyStatistics.calendar_day == calendar_day.id,
+                                                           TaskDailyStatistics.location_id == location_id).first()
+            if daily_tasks.completed_tasks == 0:
+                completed_tasks = 0
+            else:
+                completed_tasks = daily_tasks.completed_tasks - 1
+            TaskDailyStatistics.query.filter(TaskDailyStatistics.calendar_day == calendar_day.id,
+                                             TaskDailyStatistics.location_id == location_id).update({
+                'in_progress_tasks': daily_tasks.in_progress_tasks - 1,
+                'completed_tasks': completed_tasks
+            })
+            db.session.commit()
+            overall_location_statistics = TasksStatistics.query.filter(
+                TasksStatistics.user_id == user.id,
+                TasksStatistics.calendar_day == calendar_day.id,
+                TasksStatistics.location_id == location_id).all()
+            percentage_tasks = 0
+            completed_tasks = 0
+            for overall_location_st in overall_location_statistics:
+                completed_tasks += overall_location_st.completed_tasks
+                percentage_tasks += overall_location_st.completed_tasks_percentage
+            tasks_daily_statistics = TaskDailyStatistics.query.filter(TaskDailyStatistics.user_id == user.id,
+                                                                      TaskDailyStatistics.location_id == updated_task_statistics.location_id,
+                                                                      TaskDailyStatistics.calendar_day == calendar_day.id).first()
+            if completed_tasks == 0:
+                completed_tasks_percentage = 0
+            else:
+                completed_tasks_percentage = (completed_tasks / tasks_daily_statistics.in_progress_tasks) * 100
+            TaskDailyStatistics.query.filter(TaskDailyStatistics.user_id == user.id,
+                                             TaskDailyStatistics.location_id == updated_task_statistics.location_id,
+                                             TaskDailyStatistics.calendar_day == calendar_day.id).update({
+                'completed_tasks': completed_tasks,
+                'completed_tasks_percentage': completed_tasks_percentage
+            })
+            db.session.commit()
+        else:
+            task_type = Tasks.query.filter(Tasks.name == 'leads').first()
+            task_statistics = TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                                           TasksStatistics.location_id == location_id,
+                                                           TasksStatistics.task_id == task_type.id
+                                                           ).first()
+
+            TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                         TasksStatistics.location_id == location_id,
+                                         TasksStatistics.task_id == task_type.id
+                                         ).update({
+                'in_progress_tasks': task_statistics.in_progress_tasks - 1
+            })
+            db.session.commit()
+            updated_task_statistics = TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                                                   TasksStatistics.location_id == location_id,
+                                                                   TasksStatistics.task_id == task_type.id
+                                                                   ).first()
+            if updated_task_statistics.completed_tasks == 0:
+                percentage = 0
+            else:
+                percentage = (updated_task_statistics.completed_tasks / updated_task_statistics.in_progress_tasks) * 100
+            TasksStatistics.query.filter(TasksStatistics.calendar_day == calendar_day.id,
+                                         TasksStatistics.location_id == location_id,
+                                         TasksStatistics.task_id == task_type.id
+                                         ).update({
+                'completed_tasks_percentage': percentage
+            })
+            db.session.commit()
+
+            daily_tasks = TaskDailyStatistics.query.filter(TaskDailyStatistics.calendar_day == calendar_day.id,
+                                                           TaskDailyStatistics.location_id == location_id).first()
+
+            TaskDailyStatistics.query.filter(TaskDailyStatistics.calendar_day == calendar_day.id,
+                                             TaskDailyStatistics.location_id == location_id).update({
+                'in_progress_tasks': daily_tasks.in_progress_tasks - 1
+            })
+            db.session.commit()
+            overall_location_statistics = TasksStatistics.query.filter(
+                TasksStatistics.user_id == user.id,
+                TasksStatistics.calendar_day == calendar_day.id,
+                TasksStatistics.location_id == location_id).all()
+            percentage_tasks = 0
+            completed_tasks = 0
+            for overall_location_st in overall_location_statistics:
+                completed_tasks += overall_location_st.completed_tasks
+                percentage_tasks += overall_location_st.completed_tasks_percentage
+            tasks_daily_statistics = TaskDailyStatistics.query.filter(TaskDailyStatistics.user_id == user.id,
+                                                                      TaskDailyStatistics.location_id == updated_task_statistics.location_id,
+                                                                      TaskDailyStatistics.calendar_day == calendar_day.id).first()
+            if completed_tasks == 0:
+                completed_tasks_percentage = 0
+            else:
+                completed_tasks_percentage = (completed_tasks / tasks_daily_statistics.in_progress_tasks) * 100
+            TaskDailyStatistics.query.filter(TaskDailyStatistics.user_id == user.id,
+                                             TaskDailyStatistics.location_id == updated_task_statistics.location_id,
+                                             TaskDailyStatistics.calendar_day == calendar_day.id).update({
+                'completed_tasks': completed_tasks,
+                'completed_tasks_percentage': completed_tasks_percentage
+            })
+            db.session.commit()
+        change_statistics()
         return jsonify({
             "msg": "O'quvchi o'chirildi",
             "success": True,
-
         })
     if request.method == "POST":
         comment = get_json_field('comment')
@@ -80,6 +221,49 @@ def crud_lead(pm):
         }
         info = LeadInfos(**info)
         info.add()
+
+        if date != date_strptime:
+            task_type = Tasks.query.filter(Tasks.name == 'leads').first()
+            task_statistics = TasksStatistics.query.filter(TasksStatistics.task_id == task_type.id,
+                                                           TasksStatistics.calendar_day == calendar_day.id,
+                                                           TasksStatistics.location_id == info.lead.location_id).first()
+            TasksStatistics.query.filter(TasksStatistics.id == task_statistics.id).update({
+                'completed_tasks': task_statistics.completed_tasks + 1,
+            })
+            db.session.commit()
+            updated_task_statistics = TasksStatistics.query.filter(TasksStatistics.id == task_statistics.id).first()
+            if task_statistics.completed_tasks == 0:
+                cm_tasks = 0
+            else:
+                cm_tasks = (task_statistics.completed_tasks / task_statistics.in_progress_tasks) * 100
+            TasksStatistics.query.filter(TasksStatistics.id == updated_task_statistics.id).update({
+                'completed_tasks_percentage': cm_tasks
+            })
+            db.session.commit()
+            overall_location_statistics = TasksStatistics.query.filter(
+                TasksStatistics.user_id == user.id,
+                TasksStatistics.calendar_day == calendar_day.id,
+                TasksStatistics.location_id == info.lead.location_id).all()
+            percentage_tasks = 0
+            completed_tasks = 0
+
+            for overall_location_st in overall_location_statistics:
+                completed_tasks += overall_location_st.completed_tasks
+                percentage_tasks += overall_location_st.completed_tasks_percentage
+            tasks_daily_statistics = TaskDailyStatistics.query.filter(TaskDailyStatistics.user_id == user.id,
+                                                                      TaskDailyStatistics.location_id == updated_task_statistics.location_id,
+                                                                      TaskDailyStatistics.calendar_day == calendar_day.id).first()
+            if completed_tasks == 0:
+                completed_tasks_percentage = 0
+            else:
+                completed_tasks_percentage = (completed_tasks / tasks_daily_statistics.in_progress_tasks) * 100
+            TaskDailyStatistics.query.filter(TaskDailyStatistics.user_id == user.id,
+                                             TaskDailyStatistics.location_id == updated_task_statistics.location_id,
+                                             TaskDailyStatistics.calendar_day == calendar_day.id).update({
+                'completed_tasks': completed_tasks,
+                'completed_tasks_percentage': completed_tasks_percentage
+            })
+            db.session.commit()
         return jsonify({
             "msg": "Komment belgilandi",
             "success": True,
