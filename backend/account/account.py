@@ -274,8 +274,8 @@ def account_info(type_filter):
         "data": {
             "typeOfMoney": type_account,
             "data": payments_list,
-            "overhead_tools": old_current_dates(),
-            "capital_tools": old_current_dates(),
+            "overhead_tools": old_current_dates(observation=True),
+            "capital_tools": old_current_dates(observation=True),
             "teacher_list": final_list,
             "location": location
 

@@ -130,7 +130,7 @@ def get_capital_categories(location_id):
     list = []
     total_down_cost = 0
     for category in categories:
-        list.append(category.convert_json())
+        list.append(category.convert_json(location_id=location_id))
         all_capex_down = \
             db.session.query(func.sum(Capital.total_down_cost).filter(Capital.category_id == category.id,
                                                                       Capital.location_id == location_id,

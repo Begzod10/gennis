@@ -119,7 +119,7 @@ def attendance_classroom(group_id):
             "surname": student.user.surname,
             "balance": student.user.balance,
             "score": score,
-            "money_type": ["green", "yellow", "red", "navy", "black"][student.debtor],
+            "money_type": ["green", "yellow", "red", "navy", "black"][student.debtor] if student.debtor else 0,
             "type": ""
         }
         attendance_info.append(att)

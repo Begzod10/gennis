@@ -547,28 +547,7 @@ class Capital(db.Model):
 
             }
         else:
-            return {
-                "id": self.id,
-                "name": self.name,
-                "number": self.number,
-                "price": self.price,
-                "term": self.term,
-                "category": {
-                    "id": self.capital_category.id,
-                    "name": self.capital_category.name,
-
-                },
-                "total_down_cost": self.total_down_cost,
-                "img": self.img,
-                "day": self.day.date.strftime("%d"),
-                "month": self.day.date.strftime("%m"),
-                "year": self.day.date.strftime("%Y"),
-                "payment_type": {
-                    "id": self.payment_type.id,
-                    "name": self.payment_type.name,
-                }
-
-            }
+            return
 
     def add(self):
         db.session.add(self)
