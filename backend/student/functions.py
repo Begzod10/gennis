@@ -21,6 +21,7 @@ def get_student_info(student):
         "payment_reason": "tel qilinmaganlar",
         "reason_days": "",
         'history': [],
+        'completed': False
     }
 
     if student.reasons_list:

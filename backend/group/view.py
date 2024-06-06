@@ -13,7 +13,8 @@ import os
 from backend.account.models import StudentCharity
 
 
-@app.route('/group_statistics/<int:group_id>', methods=['POST', 'GET'])
+@app.route(f'{api}/group_statistics/<int:group_id>', methods=['POST', 'GET'])
+@jwt_required()
 def group_statistics(group_id):
     print(group_id)
     calendar_year, calendar_month, calendar_day = find_calendar_date()
@@ -22,21 +23,28 @@ def group_statistics(group_id):
     for student in group.student:
         student_ids.append(student.id)
     attendance = Attendance.query.filter(Attendance.calendar_year == calendar_year.id,
-                                         Attendance.calendar_month == calendar_month.id).first()
-    attendance_days = AttendanceDays.query.filter(AttendanceDays.attendance_id == attendance.id).all()
+                                         Attendance.calendar_month == calendar_month.id,
+                                         Attendance.group_id == group_id).first()
     discount_summ = 0
-    for attendance_day in attendance_days:
-        discount_summ += attendance_day.discount_per_day
+    percentage = 0
+    attendance_percentage = 0
+    if attendance:
+        attendance_days = AttendanceDays.query.filter(AttendanceDays.attendance_id == attendance.id).all()
+        for attendance_day in attendance_days:
+            discount_summ += attendance_day.discount_per_day
+
     students_charities = db.session.query(Students).join(Students.charity).options(
         contains_eager(Students.charity)).filter(
         StudentCharity.group_id == group.id, StudentCharity.student_id.in_(student_ids),
         StudentCharity.calendar_year == calendar_year.id, StudentCharity.calendar_month == calendar_month.id).count()
-    percentage = round((students_charities / len(group.student)) * 100)
+    if students_charities:
+        percentage = round((students_charities / len(group.student)) * 100)
     students_attendanced_count = db.session.query(Students).join(Students.attendance).options(
         contains_eager(Students.attendance)).filter(
         Attendance.group_id == group.id, Attendance.student_id.in_(student_ids),
         Attendance.calendar_year == calendar_year.id, Attendance.calendar_month == calendar_month.id).count()
-    attendance_percentage = round((students_attendanced_count / len(group.student)) * 100)
+    if students_attendanced_count:
+        attendance_percentage = round((students_attendanced_count / len(group.student)) * 100)
     info = {
         "discount_summ": discount_summ,
         "discount_percentage": percentage,
