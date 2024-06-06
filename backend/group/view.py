@@ -1,6 +1,9 @@
-from app import app, api, or_, db, contains_eager, extract, jsonify, request
+import pprint
+
+from app import app, api, or_, db, contains_eager, extract, jsonify, request, desc
 from backend.models.models import Groups, CalendarDay, Students, AttendanceDays, SubjectLevels, \
-    AttendanceHistoryStudent, Group_Room_Week, Attendance, CalendarMonth, Week, Rooms, Teachers, Roles, CertificateLinks
+    AttendanceHistoryStudent, Group_Room_Week, Attendance, CalendarMonth, Week, Rooms, Teachers, Roles, \
+    CertificateLinks, GroupTest
 from flask_jwt_extended import jwt_required
 from backend.student.class_model import Student_Functions
 from backend.functions.filters import old_current_dates, update_lesson_plan
@@ -15,7 +18,6 @@ from backend.account.models import StudentCharity
 
 @app.route('/group_statistics/<int:group_id>', methods=['POST', 'GET'])
 def group_statistics(group_id):
-    print(group_id)
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     group = Groups.query.filter(Groups.id == group_id).first()
     student_ids = []
@@ -134,6 +136,7 @@ def groups_by_id(group_id):
 @app.route(f'{api}/group_profile/<int:group_id>')
 @jwt_required()
 def group_profile(group_id):
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
     group = Groups.query.filter_by(id=group_id).first()
     students = db.session.query(Students).join(Students.group).options(contains_eager(Students.group)).filter(
         Groups.id == group_id).order_by(Students.id).all()
@@ -147,7 +150,7 @@ def group_profile(group_id):
         level = group.level.name
     data["information"] = {
         "groupName": {
-            "name": "Gruppa nomi",
+            "name": "Guruh nomi",
             "value": group.name.title()
         },
         "eduLang": {
@@ -159,7 +162,7 @@ def group_profile(group_id):
             "value": len(group.student)
         },
         "groupPrice": {
-            "name": "Gruppa narxi",
+            "name": "Guruh narxi",
             "value": group.price
         },
         "groupCourseType": {
@@ -248,6 +251,37 @@ def group_profile(group_id):
             "id": group.level.id,
             "name": group.level.name
         }
+    subject_levels = SubjectLevels.query.filter(SubjectLevels.subject_id == group.subject_id).order_by(
+        SubjectLevels.id).all()
+    test_info = []
+    for level in subject_levels:
+        group_tests = GroupTest.query.filter(GroupTest.group_id == group_id,
+                                             GroupTest.calendar_year == calendar_year.id,
+                                             GroupTest.calendar_month == calendar_month.id,
+                                             GroupTest.level_id == level.id).all()
+        test_percentage = 0
+        for test in group_tests:
+            test_percentage += test.percentage if test.percentage else 0
+
+        info = {
+            "level": level.name,
+            "percentage": round(test_percentage / len(group_tests)) if group_tests else 0
+        }
+        test_info.append(info)
+    pprint.pprint(test_info)
+    test_status = GroupTest.query.filter(GroupTest.group_id == group_id, GroupTest.calendar_year == calendar_year.id,
+                                         GroupTest.calendar_month == calendar_month.id,
+                                         GroupTest.student_tests == None).first()
+    last_test = GroupTest.query.filter(GroupTest.group_id == group_id, GroupTest.calendar_month == calendar_month.id,
+                                       GroupTest.calendar_year == calendar_year.id,
+                                       GroupTest.student_tests != None).order_by(desc(GroupTest.id)).first()
+
+    if test_status:
+        msg = f"Guruhda {test_status.day.date.strftime('%d')} kuni {test_status.subject_level.name} leveli bo'yicha test olinishi kerak."
+    elif last_test and not test_status:
+        msg = f"Guruhda oxirgi marta {last_test.day.date.strftime('%d')} kuni {last_test.subject_level.name} leveli bo'yicha test olingan."
+    else:
+        msg = f"Guruh uchun {calendar_month.date.strftime('%B')} oyi uchun test kuni belgilanmagan."
     return jsonify({
         "locationId": group.location_id,
         "groupName": group.name.title(),
@@ -260,7 +294,9 @@ def group_profile(group_id):
         "level": info_level,
         "links": links,
         "levels": iterate_models(levels),
-        "isTime": is_time
+        "isTime": is_time,
+        "test_info": test_info,
+        "msg": msg
     })
 
 

@@ -102,8 +102,8 @@ class Students(db.Model):
                                 lazy="select")
     lesson_plan = relationship("LessonPlanStudents", uselist=False, backref="student", order_by="LessonPlanStudents.id")
     student_certificate = relationship("StudentCertificate", backref="student", order_by="StudentCertificate.id")
-    student_debts = relationship("StudentDebt", backref="student", order_by="StudentDebt.id")
-    student_tests = relationship("StudentTest", backref="student", order_by="StudentTest.id")
+    student_debts = relationship("StudentDebt", backref="student", order_by="StudentDebt.id", lazy="select")
+    student_tests = relationship("StudentTest", backref="student", order_by="StudentTest.id", lazy="select")
     student_calling_info = relationship("StudentCallingInfo", backref="student", order_by="StudentCallingInfo.id")
 
 
@@ -170,15 +170,25 @@ class RegisterDeletedStudents(db.Model):
 class StudentTest(db.Model):
     __tablename__ = "student_test"
     id = Column(Integer, primary_key=True)
-    ball = Column(Integer)
+    percentage = Column(String)
     true_answers = Column(Integer)
-    false_answers = Column(Integer)
     student_id = Column(Integer, ForeignKey('students.id'))
     group_test_id = Column(Integer, ForeignKey('group_test.id'))
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     level_id = Column(Integer, ForeignKey('subjectlevels.id'))
+    calendar_day = Column(Integer, ForeignKey('calendarday.id'))
 
     def add(self):
         db.session.add(self)
         db.session.commit()
+
+    def convert_json(self, entire=False):
+        return {
+            "id": self.id,
+            "percentage": f"{self.percentage}%",
+            "true_answers": self.true_answers,
+            "student_name": self.student.user.name,
+            "student_surname": self.student.user.surname,
+            "student_id": self.student.user.id
+        }

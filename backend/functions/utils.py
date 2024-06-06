@@ -51,7 +51,7 @@ def get_or_creat_datetime(y, m, d):
 
     filtered_year = get_or_create(CalendarYear, year)
     filtered_month = get_or_create(CalendarMonth, month, year_id=filtered_year.id)
-    filtered_day = get_or_create(CalendarDay, day, year_id=filtered_year.id, month_id=filtered_month.id)
+    filtered_day = get_or_create(CalendarDay, day, month_id=filtered_month.id)
 
     return filtered_year, filtered_month, filtered_day
 
