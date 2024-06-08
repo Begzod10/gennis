@@ -3,7 +3,7 @@ from backend.functions.utils import remove_items_create_group
 from backend.models.models import Subjects, CourseTypes, Rooms, Week, Teachers, Group_Room_Week, Students, Users, \
     StudentHistoryGroups, Groups, RegisterDeletedStudents, Roles, Locations, DeletedStudents, GroupReason, CalendarDay, \
     TeacherGroupStatistics
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.functions.utils import get_json_field, find_calendar_date
 from datetime import datetime
 
@@ -701,9 +701,12 @@ def move_group(new_group_id, old_group_id):
         })
 
 
-@app.route(f'{api}/filtered_groups/<int:location_id>')
-def filtered_groups(location_id):
-    groups = Groups.query.filter(Groups.location_id == location_id,
+@app.route(f'{api}/filtered_groups/<int:group_id>')
+@jwt_required()
+def filtered_groups(group_id):
+    group = Groups.query.filter(Groups.id == group_id).first()
+    groups = Groups.query.filter(Groups.location_id == group.location_id,
+                                 Groups.id != group.id,
                                  Groups.teacher_id != None, Groups.time_table != None).filter(
         or_(Groups.deleted == None, Groups.deleted == False)).order_by('id').all()
     list_group = []
@@ -727,6 +730,7 @@ def filtered_groups(location_id):
         info['teacherName'] = teacher.user.name.title()
         info['teacherSurname'] = teacher.user.surname.title()
         list_group.append(info)
+    print(list_group)
     return jsonify({
         "groups": list_group
     })

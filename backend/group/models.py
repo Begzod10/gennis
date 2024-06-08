@@ -1,4 +1,4 @@
-from backend.models.models import Column, Integer, ForeignKey, String, Boolean, relationship, DateTime, db
+from backend.models.models import Column, Integer, Float, ForeignKey, String, Boolean, relationship, DateTime, db
 
 db.Table('student_group',
          db.Column('student_id', db.Integer, db.ForeignKey('students.id')),
@@ -201,30 +201,32 @@ class AttendanceDays(db.Model):
 class GroupTest(db.Model):
     __tablename__ = "group_test"
     id = Column(Integer, primary_key=True)
-    title = Column(String)
+    name = Column(String)
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     level_id = Column(Integer, ForeignKey('subjectlevels.id'))
+    number_tests = Column(Integer)
     calendar_year = Column(Integer, ForeignKey('calendaryear.id'))
     calendar_month = Column(Integer, ForeignKey('calendarmonth.id'))
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
     student_tests = relationship("StudentTest", backref="group_test", order_by="StudentTest.id")
+    percentage = Column(Float, default=0)
 
     def add(self):
         db.session.add(self)
         db.session.commit()
-# class BlackBalance(db.Model):
-#     __tablename__ = "black_balance"
-#     id = Column(Integer, primary_key=True)
-#     location_id = Column(Integer, ForeignKey('locations.id'))
-#     teacher_id = Column(Integer, ForeignKey('teachers.id'))
-#     group_id = Column(Integer, ForeignKey('groups.id'))
-#     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
-#     attendance_id = Column(Integer, ForeignKey('attendance.id'))
-#     student_id = Column(Integer, ForeignKey('students.id'))
-#     balance_per_day = Column(Integer)
-#     salary_per_day = Column(Integer)
-#     balance_with_discount = Column(Integer)
-#     discount_per_day = Column(Integer)
-#     days_id = Column(Integer, ForeignKey('attendancedays.id'))
-#     payed = Column(Boolean)
+
+    def convert_json(self, entire=False):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "date": self.day.date.strftime("%Y-%m-%d"),
+            "day": self.day.date.strftime("%d"),
+            "month": self.day.date.strftime("%m"),
+            "year": self.day.date.strftime("%Y"),
+            "students": [item.convert_json() for item in self.student_tests],
+            "number": self.number_tests,
+            "status": True if self.student_tests else False,
+            "level_id": self.level_id,
+            "percentage": self.percentage
+        }

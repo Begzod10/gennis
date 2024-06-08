@@ -1,8 +1,39 @@
+import pprint
+
 from app import app, db, request, jsonify
 from backend.models.models import Subjects, PaymentTypes, Professions, Locations, AccountingPeriod, EducationLanguage, \
     CourseTypes
-from backend.functions.utils import api, find_calendar_date
+from backend.functions.utils import api, find_calendar_date, get_json_field
 from flask_jwt_extended import jwt_required
+
+
+@app.route(f'{api}/change_location_info/<int:location_id>', methods=['POST', "GET"])
+@jwt_required()
+def change_location_info(location_id):
+    location = Locations.query.filter(Locations.id == location_id).first()
+    if request.method == "POST":
+        location.code = get_json_field('code')
+        location.bank = get_json_field('bank')
+        location.bank_sheet = get_json_field('bank_sheet')
+        location.director_fio = get_json_field('director_fio')
+        location.district = get_json_field('district')
+        location.inn = get_json_field('inn')
+        location.location_type = get_json_field('location_type')
+        location.campus_name = get_json_field('campus_name')
+        location.mfo = get_json_field('mfo')
+        location.address = get_json_field('address')
+        location.number_location = get_json_field('tel')
+        db.session.commit()
+
+        return jsonify({
+            "msg": "Ma'lumotlar o'zgartirildi.",
+            "data": location.convert_json()
+        })
+
+    else:
+        return jsonify({
+            "data": location.convert_json()
+        })
 
 
 @app.route(f'{api}/list_tools_info', methods=["GET"])

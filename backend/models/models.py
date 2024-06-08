@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy import String, Integer, Boolean, Column, ForeignKey, DateTime, or_, and_, desc, func, ARRAY, JSON, \
+from sqlalchemy import String, Integer, Boolean, Float, Column, ForeignKey, DateTime, or_, and_, desc, func, ARRAY, \
+    JSON, \
     extract, Date, BigInteger
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import relationship
@@ -228,8 +229,12 @@ class CalendarDay(db.Model):
                                             order_by="TeacherGroupStatistics.id", lazy="select")
     capitals = relationship("Capital", backref="day", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="day", order_by="GroupTest.id")
+
     tasks_statistics = relationship("TasksStatistics", backref="day", order_by='TasksStatistics.id')
     tasks_daily_statistics = relationship("TaskDailyStatistics", backref="day", order_by='TaskDailyStatistics.id')
+
+
+
     # student_tests = relationship("StudentTest", backref="day", order_by="StudentTest.id")
     def convert_json(self, entire=False):
         return {
@@ -248,6 +253,15 @@ class Locations(db.Model):
     location = Column(String)
     link = Column(String)
     code = Column(Integer)
+    director_fio = Column(String)
+    location_type = Column(String)
+    district = Column(String)
+    bank_sheet = Column(String)
+    inn = Column(String)
+    bank = Column(String)
+    mfo = Column(String)
+    campus_name = Column(String)
+    address = Column(String)
     users = relationship('Users', backref="location", order_by="Users.id")
     groups = relationship("Groups", backref="location", order_by="Groups.id")
     attendance = relationship("Attendance", backref="location", order_by="Attendance.id")
@@ -283,7 +297,21 @@ class Locations(db.Model):
     def convert_json(self, entire=False):
         return {
             "value": self.id,
-            "name": self.name
+            "name": self.name,
+            "number_location": self.number_location,
+            "location": self.location,
+            "link": self.link,
+            "code": self.code,
+            "director_fio": self.director_fio,
+            "location_type": self.location_type,
+            "district": self.district,
+            "bank_sheet": self.bank_sheet,
+            "inn": self.inn,
+            "bank": self.bank,
+            "mfo": self.mfo,
+            "campus_name": self.campus_name,
+            "address": self.address
+
         }
 
 

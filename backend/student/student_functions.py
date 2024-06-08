@@ -3,10 +3,10 @@ import os
 from flask_jwt_extended import jwt_required
 from backend.models.models import Students, AttendanceHistoryStudent, DeletedStudents, Users, RegisterDeletedStudents, \
     Contract_Students, BookPayments, StudentPayments, Teachers, Roles, Locations, StudentExcuses, StudentHistoryGroups, \
-    Groups, StudentDebt, PhoneList, or_, StudentDebtComment, Contract_Students_Data
+    Groups, StudentDebt, PhoneList, or_, StudentDebtComment, Contract_Students_Data, StudentCharity
 from backend.functions.small_info import checkFile, user_contract_folder
 from werkzeug.utils import secure_filename
-from backend.functions.utils import find_calendar_date, update_week
+from backend.functions.utils import find_calendar_date, update_week, get_json_field
 import docx
 from datetime import datetime
 import uuid
@@ -167,17 +167,7 @@ def deletedStudents(id):
     for user in user_list:
         user_id.append(user.id)
     user_id = list(dict.fromkeys(user_id))
-    # students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
-    #                                              ).order_by(
-    #     desc(DeletedStudents.calendar_day)).all()
-    #
-    # for student in students_list:
-    #     group_reason = GroupReason.query.filter(GroupReason.reason == student.reason).first()
-    #     group_reason_other = GroupReason.query.filter(GroupReason.reason == "Boshqa").first()
-    #     reason_id = group_reason.id if group_reason else group_reason_other.id
-    #     student.reason_id = reason_id
-    #     db.session.commit()
-    # print('boldi')
+
     if reason == "Boshqa":
         students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
                                                      DeletedStudents.reason != "O'qituvchi yoqmadi",
@@ -299,7 +289,6 @@ def create_contract(user_id):
     givenPlace = request.get_json()['givenPlace']
     givenTime = request.get_json()['givenTime']
     place = request.get_json()['place']
-
     Students.query.filter(Students.user_id == user_id).update({
         "representative_name": name,
         "representative_surname": surname
@@ -320,9 +309,9 @@ def create_contract(user_id):
     do = datetime.strftime(do, "%Y-%m-%d")
 
     user = Users.query.filter(Users.id == user_id).first()
-    location_id = user.location_id
-    student = Students.query.filter(Students.user_id == user_id).first()
 
+    student = Students.query.filter(Students.user_id == user_id).first()
+    location = Locations.query.filter(Locations.id == user.location_id).first()
     contract = Contract_Students.query.filter(Contract_Students.student_id == student.id).first()
 
     if student.contract_word_url:
@@ -332,8 +321,11 @@ def create_contract(user_id):
         "contract_word_url": ""
     })
     db.session.commit()
-
-    contract_data = Contract_Students_Data.query.filter(Contract_Students_Data.location_id == location_id,
+    student_charity = StudentCharity.query.filter(StudentCharity.student_id == student.id).all()
+    all_charity = 0
+    for char in student_charity:
+        all_charity += char.discount
+    contract_data = Contract_Students_Data.query.filter(Contract_Students_Data.location_id == location.id,
                                                         Contract_Students_Data.year == calendar_year.date).first()
     if not contract:
         contract = Contract_Students(student_id=student.id, created_date=ot,
@@ -343,7 +335,7 @@ def create_contract(user_id):
         db.session.commit()
 
         if not contract_data:
-            new = Contract_Students_Data(year=calendar_year.date, number=1, location_id=location_id)
+            new = Contract_Students_Data(year=calendar_year.date, number=1, location_id=location.id)
             db.session.add(new)
             db.session.commit()
         else:
@@ -372,36 +364,84 @@ def create_contract(user_id):
         father_name = contract.father_name
     doc = docx.Document('frontend/build/static/contract_folder/contract.docx')
     id = uuid.uuid1()
+    text = location.address.split(" ")
+    text_item = ""
+    text_item2 = ""
+    if len(text) > 3:
+        for item in text[0:4]:
+            text_item += f" {item}"
+        for item in text[4:]:
+            text_item2 += f" {item}"
+    else:
+        for item in text:
+            text_item += f" {item}"
     user_id = id.hex[0:15]
+    campus_name = location.name + " " + location.location_type if location.location_type == "Shahri" else location.district + " " + location.location_type
     # number = f'{calendar_year.date.strftime("%Y")}/{contract_data.location.code}-{contract_data.number}'
-    number = f'{calendar_year.date.strftime("%Y")}/{contract_data.number}'
+    number = f'{calendar_year.date.strftime("%Y")}/{location.code}/{contract_data.number}'
     doc.paragraphs[0].runs[0].text = f"SHARTNOMA N{number}"
     doc.paragraphs[
-        3].text = f"              Bo`stonliq tumani				                                            {contract.created_date.strftime('%d-%m-%Y')}"
-    doc.paragraphs[
-        6].text = f"№ MTT 0428 Litsenziyaga asosan hamda taʼlim muassasasi Ustaviga asosan faoliyat yurituvchi “GENNIS CAMPUS” nodavlat taʼlim muassasasi (kelgusida “Nodavlat taʼlim muassasasi” deb yuritiluvchi)  nomidan direktor Yuldashov M.M. bir tomondan va {surname.title()} {name.title()} {father_name[0].title()}{father_name[1:].lower()}"
+        3].text = f"              {campus_name}			                                             {contract.created_date.strftime('%d-%m-%Y')}"
+    print(doc.paragraphs[4].text)
+    if location.id > 3:
 
+        doc.paragraphs[
+            5].text = "Oʻzbekiston Respublikasi Prezidentining 15.09.2017-yildagi PQ-3276 sonli “Nodavlat taʼlim xizmatlari koʻrsatish faoliyatini yanada rivojlantirish chora-tadbirlari toʻgʻrisida”gi qaroriga."
+        doc.paragraphs[
+            6].text = f"Hamda taʼlim muassasasi Ustaviga asosan faoliyat yurituvchi “{location.campus_name}” nodavlat taʼlim muassasasi (kelgusida “Nodavlat taʼlim muassasasi” deb yuritiluvchi)  nomidan direktor {location.director_fio} bir tomondan va {surname.title()} {name.title()} {father_name[0].title()}{father_name[1:].lower()}"
+    else:
+        doc.paragraphs[
+            6].text = f"№ MTT 0428 Litsenziyaga asosan hamda taʼlim muassasasi Ustaviga asosan faoliyat yurituvchi “{location.campus_name}” nodavlat taʼlim muassasasi (kelgusida “Nodavlat taʼlim muassasasi” deb yuritiluvchi)  nomidan direktor {location.director_fio} bir tomondan va {surname.title()} {name.title()} {father_name[0].title()}{father_name[1:].lower()}"
     doc.paragraphs[
         9].text = f"1.1 Mazkur shartnomaga asosan oʻquvchining ota-onasi (yoki qonuniy vakili) nodavlat taʼlim muassasasiga maktabdan tashqari taʼlim olish maqsadida oʻzining voyaga yetmagan farzandi  {user.name.title()} {user.surname.title()} {user.father_name[0].title()}{user.father_name[1:].lower()} ni"
 
     doc.paragraphs[
-        15].text = f"2.1. Oʻquvchining nodavlat taʼlim muassasasida taʼlim olishi uchun bir oylik toʻlov summasi {abs(student.combined_debt)} va {contract.expire_date.strftime('%d-%m-%Y')} muddatgacha {abs(student.combined_debt * month)}  soʻmni tashkil etadi."
+        15].text = f"2.1. Oʻquvchining nodavlat taʼlim muassasasida taʼlim olishi uchun bir oylik toʻlov summasi {abs(student.combined_debt) - all_charity} va {contract.expire_date.strftime('%d-%m-%Y')} muddatgacha {abs(((student.combined_debt) - all_charity) * month)}  soʻmni tashkil etadi."
     doc.paragraphs[
         69].text = f"7.1.Mazkur shartnoma tomonlar oʻrtasida imzolangan kundan boshlab yuridik kuchga ega hisoblanadi va {contract.expire_date.strftime('%d-%m-%Y')} muddatga qadar amal qiladi"
-    doc.paragraphs[
-        84].text = f"“GENNIS CAMPUS” NTM                                   F.I.O. {surname.title()} {name.title()} {father_name[0].title()}{father_name[1:].lower()}"
-    doc.paragraphs[
-        85].text = f"Toshkent viloyati Boʻstonliq tumani                             Pasport maʼlumoti: Seriya {contract.passport_series}"
-    doc.paragraphs[
-        86].text = f"Xoʻjakent qishlogʻi Nurchilar MFY                          Berilgan vaqti {contract.given_time}"
-    doc.paragraphs[87].text = f"R/S 20208000805036132001  INN 306222218        Berilgan joyi {contract.given_place}"
-    doc.paragraphs[88].text = "Bank Xalq banki Boʻstonliq tuman filiali                                         "
-    doc.paragraphs[
-        89].text = f"MFO 00770                                                                Manzili: {contract.place}"
-    doc.paragraphs[
-        90].text = "Tel: (94)3103333                                                                                   "
+    info = [
+        {
+            "left_info": f"{location.campus_name} NTM",
+            "right_info": f"F.I.O : {surname.title()} {name.title()} {father_name[0].title()}{father_name[1:].lower()}"
+        },
+        {
+            "left_info": location.address,
+            "right_info": f"Pasport maʼlumoti: Seriya {contract.passport_series}"
+        },
+        {
+            "left_info": f"R/S: {location.bank_sheet}  INN: {location.inn}",
+            "right_info": f"Berilgan vaqti: {contract.given_time}"
+        },
+        {
+            "left_info": f"Bank: {location.bank}",
+            "right_info": f"Manzili: {contract.place}"
+        },
+        {
+            "left_info": f"MFO: {location.mfo}",
+            "right_info": ""
+        },
+        {
+            "left_info": f"Tel: {location.number_location}",
+            "right_info": ""
+        },
+        {
+            "left_info": f"Direktor: __________{location.director_fio}",
+            "right_info": ""
+        },
+        {
+            "left_info": "M.P",
+            "right_info": "Imzo____________"
+        },
+    ]
+    table = doc.add_table(rows=1, cols=2)
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Nodavlat taʼlim muassasasi'
+    hdr_cells[1].text = 'O`quvchining qonuniy vavakili(ota-onasi)'
+    for item in info:
+        row_cells = table.add_row().cells
+        row_cells[0].text = item['left_info']
+        row_cells[1].text = item['right_info']
 
-    doc.paragraphs[91].text = "Direktor __________ M.M.Yuldashov                                                       "
     doc.save(
         f"frontend/build/static/contract_folder/{user_id} {student.user.name.title()} {student.user.surname.title()}doc.docx")
     new_doc = f"static/contract_folder/{user_id} {student.user.name.title()} {student.user.surname.title()}doc.docx"

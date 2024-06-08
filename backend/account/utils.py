@@ -7,7 +7,6 @@ from app import db, desc, contains_eager, session
 from backend.models.models import func
 
 
-
 def update_capital(location_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     capitals = Capital.query.filter(Capital.location_id == location_id).order_by(Capital.id).all()
@@ -31,7 +30,8 @@ def update_capital(location_id):
                 capex_down = CapitalTerm(**info)
                 capex_down.add()
             all_capex_down = \
-                db.session.query(func.sum(CapitalTerm.down_cost).filter(CapitalTerm.capital_id == capital.id)).first()[0]
+                db.session.query(func.sum(CapitalTerm.down_cost).filter(CapitalTerm.capital_id == capital.id)).first()[
+                    0]
             capital.total_down_cost = -all_capex_down
             db.session.commit()
 
