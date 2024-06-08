@@ -229,8 +229,10 @@ class CalendarDay(db.Model):
                                             order_by="TeacherGroupStatistics.id", lazy="select")
     capitals = relationship("Capital", backref="day", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="day", order_by="GroupTest.id")
+
     tasks_statistics = relationship("TasksStatistics", backref="day", order_by='TasksStatistics.id')
     tasks_daily_statistics = relationship("TaskDailyStatistics", backref="day", order_by='TaskDailyStatistics.id')
+
 
     # student_tests = relationship("StudentTest", backref="day", order_by="StudentTest.id")
     def convert_json(self, entire=False):

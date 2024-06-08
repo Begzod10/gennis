@@ -2,7 +2,7 @@ from app import app, api, request, jsonify, db, contains_eager
 from backend.models.models import Students, StudentCallingInfo, Users, StudentExcuses
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.functions.utils import api, find_calendar_date
-from backend.student.functions import get_student_info
+from backend.student.functions import get_student_info, get_completed_student_info
 from backend.models.models import Locations
 from backend.lead.models import *
 from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
@@ -51,12 +51,16 @@ def new_students_calling(location_id):
             if student.student_calling_info[-1].date <= date_strptime:
                 if student.student_calling_info[-1].date.month == today.month:
                     index = int(today.day) - int(student.student_calling_info[-1].date.day)
-                    index = max(0, min(index, 2))
+                    index = max(0, min(index, 1))
                 else:
-                    index = 2
-                info['status'] = ['green', 'yellow', 'red'][index]
+                    index = 1
+                print(index)
+                info['status'] = ['yellow', 'red'][index]
                 students_info.append(info)
-            if student.student_calling_info[-1].day == date_strptime:
+            added_date = f'{student.student_calling_info[-1].day.year}-{student.student_calling_info[-1].day.month}-{student.student_calling_info[-1].day.day}'
+            added_date_strptime = datetime.strptime(added_date, "%Y-%m-%d")
+            if added_date_strptime == date_strptime and student.student_calling_info[-1].date > date_strptime:
+                info['status'] = 'yellow'
                 completed_tasks.append(info)
         else:
             info['status'] = 'red'
@@ -99,7 +103,7 @@ def new_students_calling(location_id):
                     index = max(0, min(index, 2))
                 else:
                     index = 2
-                info['status'] = ['green', 'yellow', 'red'][index]
+                info['status'] = ['yellow', 'red'][index]
                 for calling_info in student.student_calling_info:
                     calling_date = {
                         'id': calling_info.id,
@@ -167,9 +171,8 @@ def student_in_debts(location_id):
             if get_student_info(student) != None:
                 payments_list.append(get_student_info(student))
 
-                if student.excuses[-1].added_date == date_strptime:
-                    completed_tasks.append(get_student_info(student))
-
+            if get_completed_student_info(student) != None:
+                completed_tasks.append(get_completed_student_info(student))
         return jsonify({"students": payments_list, 'completed_tasks': completed_tasks})
 
     if request.method == "POST":

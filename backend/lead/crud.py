@@ -50,6 +50,7 @@ def get_leads_location(status, location_id):
     if status == "news":
         change_statistics()
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False).order_by(desc(Lead.id)).all()
+
         return jsonify({
             "leads": iterate_models(leads)
         })
@@ -85,10 +86,12 @@ def crud_lead(pm):
         comment = get_json_field('comment')
         date = get_json_field('date')
         date = datetime.strptime(date, '%Y-%m-%d')
+        added_date = datetime.strptime(f'{today.year}-{today.month}-{today.day}', '%Y-%m-%d')
         info = {
             "lead_id": lead.id,
             "day": date,
-            "comment": comment
+            "comment": comment,
+            'added_date': added_date
         }
         info = LeadInfos(**info)
         info.add()
@@ -100,7 +103,6 @@ def crud_lead(pm):
         })
     if request.method == "GET":
         get_comments = LeadInfos.query.filter(LeadInfos.lead_id == lead.id).order_by(desc(LeadInfos.id)).all()
-
         return jsonify({
             "comments": iterate_models(get_comments)
         })

@@ -9,6 +9,7 @@ class LeadInfos(db.Model):
     lead_id = Column(Integer, ForeignKey('lead.id'))
     comment = Column(String)
     day = Column(DateTime)
+    added_date = Column(DateTime)
 
     def convert_json(self, entire=False):
         return {
@@ -49,15 +50,16 @@ class Lead(db.Model):
                     index = 2
                 if index < 0:
                     index = 0
-
             else:
                 index = 2
         else:
             index = 2
         history = []
+        completed = []
         if self.infos:
             for info in self.infos:
                 history.append(info.convert_json())
+
         return {
             "id": self.id,
             "name": self.name,
