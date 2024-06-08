@@ -4,7 +4,11 @@ from backend.functions.utils import api, find_calendar_date, get_json_field, des
 from backend.models.models import db, Subjects
 from .models import Lead, LeadInfos
 from datetime import datetime
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
+from backend.student.calling_to_students import change_statistics
+from backend.models.models import Users
+from backend.lead.functions import update_task_statistics, update_posted_tasks
 
 
 @app.route(f'{api}/register_lead', methods=['POST'])
@@ -44,6 +48,7 @@ def register_lead():
 @jwt_required()
 def get_leads_location(status, location_id):
     if status == "news":
+        change_statistics()
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False).order_by(desc(Lead.id)).all()
         return jsonify({
             "leads": iterate_models(leads)
@@ -58,17 +63,24 @@ def get_leads_location(status, location_id):
 @app.route(f'{api}/lead_crud/<int:pm>', methods=['POST', "GET", "DELETE", "PUT"])
 @jwt_required()
 def crud_lead(pm):
+    user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    today = datetime.today()
+    date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     lead = Lead.query.filter(Lead.id == pm).first()
+    task_type = Tasks.query.filter_by(name='leads').first()
+
     if request.method == "DELETE":
         comment = get_json_field('comment')
+        location_id = get_json_field('location_id')
+        status = get_json_field('status')
+
         lead.deleted = True
         lead.comment = comment
         db.session.commit()
-        return jsonify({
-            "msg": "O'quvchi o'chirildi",
-            "success": True,
-
-        })
+        update_task_statistics(user, status, calendar_day, location_id, task_type)
+        change_statistics()
+        return jsonify({"msg": "O'quvchi o'chirildi", "success": True, })
     if request.method == "POST":
         comment = get_json_field('comment')
         date = get_json_field('date')
@@ -80,6 +92,7 @@ def crud_lead(pm):
         }
         info = LeadInfos(**info)
         info.add()
+        update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type)
         return jsonify({
             "msg": "Komment belgilandi",
             "success": True,

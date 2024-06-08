@@ -113,6 +113,7 @@ class StudentCallingInfo(db.Model):
     student_id = Column(Integer, ForeignKey('students.id'))
     comment = Column(String)
     day = Column(DateTime)
+    date = Column(DateTime)
 
     def add(self):
         db.session.add(self)
@@ -176,7 +177,6 @@ class StudentTest(db.Model):
     group_test_id = Column(Integer, ForeignKey('group_test.id'))
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
-    level_id = Column(Integer, ForeignKey('subjectlevels.id'))
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
 
     def add(self):

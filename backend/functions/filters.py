@@ -642,7 +642,7 @@ def old_current_dates(group_id=0, observation=False):
     if group_id != 0:
         day_list = weekday_from_date(day_list, current_month, current_year, week_list)
         old_days = weekday_from_date(old_days, old_month, old_year, week_list)
-    if not observation:
+    if current_day > 7:
         data = [
             {
                 "name": calendar_month.date.strftime("%h"),

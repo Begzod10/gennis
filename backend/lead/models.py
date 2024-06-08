@@ -32,7 +32,7 @@ class Lead(db.Model):
     account_period_id = Column(Integer, ForeignKey('accountingperiod.id'))
     comment = Column(String)
     location_id = Column(Integer, ForeignKey('locations.id'))
-    infos = relationship("LeadInfos", backref="lead", uselist=False, order_by=desc(LeadInfos.id))
+    infos = relationship("LeadInfos", backref="lead", order_by=desc(LeadInfos.id))
 
     def convert_json(self, entire=False):
 
@@ -54,6 +54,10 @@ class Lead(db.Model):
                 index = 2
         else:
             index = 2
+        history = []
+        if self.infos:
+            for info in self.infos:
+                history.append(info.convert_json())
         return {
             "id": self.id,
             "name": self.name,
@@ -62,7 +66,7 @@ class Lead(db.Model):
             "deleted": self.deleted,
             "comment": self.comment,
             "status": ['green', 'yellow', 'red'][index],
-            "info": self.infos.convert_json() if self.infos else "",
+            "history": history,
             "subjects": [subject.convert_json() for subject in self.subject]
         }
 

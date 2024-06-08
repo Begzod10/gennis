@@ -35,7 +35,7 @@ from backend.certificate.models import *
 from backend.book.models import *
 from backend.lead.models import *
 from backend.for_programmers.models import *
-
+from backend.tasks.models import *
 
 class CalendarYear(db.Model):
     __tablename__ = "calendaryear"
@@ -82,7 +82,8 @@ class CalendarYear(db.Model):
     test = relationship("GroupTest", backref="year", order_by="GroupTest.id")
 
     capital_term = relationship("CapitalTerm", backref="year", order_by="CapitalTerm.id", lazy="select")
-
+    tasks_statistics = relationship("TasksStatistics", backref="year", order_by='TasksStatistics.id')
+    tasks_daily_statistics = relationship("TaskDailyStatistics", backref="year", order_by='TaskDailyStatistics.id')
     # student_tests = relationship("StudentTest", backref="year", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
@@ -139,7 +140,8 @@ class CalendarMonth(db.Model):
     test = relationship("GroupTest", backref="month", order_by="GroupTest.id")
 
     capital_term = relationship("CapitalTerm", backref="month", order_by="CapitalTerm.id", lazy="select")
-
+    tasks_statistics = relationship("TasksStatistics", backref="month", order_by='TasksStatistics.id')
+    tasks_daily_statistics = relationship("TaskDailyStatistics", backref="month", order_by='TaskDailyStatistics.id')
     # student_tests = relationship("StudentTest", backref="month", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
@@ -227,9 +229,10 @@ class CalendarDay(db.Model):
                                             order_by="TeacherGroupStatistics.id", lazy="select")
     capitals = relationship("Capital", backref="day", lazy="select", order_by="Capital.id")
     test = relationship("GroupTest", backref="day", order_by="GroupTest.id")
+    tasks_statistics = relationship("TasksStatistics", backref="day", order_by='TasksStatistics.id')
+    tasks_daily_statistics = relationship("TaskDailyStatistics", backref="day", order_by='TaskDailyStatistics.id')
 
     # student_tests = relationship("StudentTest", backref="day", order_by="StudentTest.id")
-
     def convert_json(self, entire=False):
         return {
             "id": self.id,
@@ -285,6 +288,8 @@ class Locations(db.Model):
     book_order = relationship("BookOrder", backref="location", order_by="BookOrder.id", lazy="select")
     old_id = Column(Integer)
     center_balances = relationship("CenterBalance", backref="location", lazy="select", order_by="CenterBalance.id")
+    tasks_statistics = relationship("TasksStatistics", backref="location", order_by="TasksStatistics.id")
+    tasks_daily_statistics = relationship("TaskDailyStatistics", backref="location", order_by='TaskDailyStatistics.id')
 
     def convert_json(self, entire=False):
         return {
@@ -379,7 +384,8 @@ class Users(db.Model):
     observation = relationship("TeacherObservationDay", backref="user", order_by="TeacherObservationDay.id",
                                lazy='select')
     observer = Column(Boolean, default=False)
-
+    tasks_statistics = relationship("TasksStatistics", backref="user", order_by='TasksStatistics.id')
+    tasks_daily_statistics = relationship("TaskDailyStatistics", backref="user", order_by='TaskDailyStatistics.id')
     def convert_json(self, entire=False):
         if not entire:
             info = {
@@ -612,8 +618,6 @@ class SubjectLevels(db.Model):
     groups = relationship("Groups", backref="level", order_by="Groups.id")
     classroom_id = Column(Integer)
     disabled = Column(Boolean)
-    test = relationship('GroupTest', backref="subject_level", order_by="GroupTest.id")
-    student_tests = relationship("StudentTest", backref="subject_level", order_by="StudentTest.id")
 
     def convert_json(self, entire=False):
         return {

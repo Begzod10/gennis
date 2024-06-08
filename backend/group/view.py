@@ -16,7 +16,8 @@ import os
 from backend.account.models import StudentCharity
 
 
-@app.route('/group_statistics/<int:group_id>', methods=['POST', 'GET'])
+@app.route(f'{api}/group_statistics/<int:group_id>', methods=['POST', 'GET'])
+@jwt_required()
 def group_statistics(group_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     group = Groups.query.filter(Groups.id == group_id).first()
@@ -24,21 +25,28 @@ def group_statistics(group_id):
     for student in group.student:
         student_ids.append(student.id)
     attendance = Attendance.query.filter(Attendance.calendar_year == calendar_year.id,
-                                         Attendance.calendar_month == calendar_month.id).first()
-    attendance_days = AttendanceDays.query.filter(AttendanceDays.attendance_id == attendance.id).all()
+                                         Attendance.calendar_month == calendar_month.id,
+                                         Attendance.group_id == group_id).first()
     discount_summ = 0
-    for attendance_day in attendance_days:
-        discount_summ += attendance_day.discount_per_day
+    percentage = 0
+    attendance_percentage = 0
+    if attendance:
+        attendance_days = AttendanceDays.query.filter(AttendanceDays.attendance_id == attendance.id).all()
+        for attendance_day in attendance_days:
+            discount_summ += attendance_day.discount_per_day
+
     students_charities = db.session.query(Students).join(Students.charity).options(
         contains_eager(Students.charity)).filter(
         StudentCharity.group_id == group.id, StudentCharity.student_id.in_(student_ids),
         StudentCharity.calendar_year == calendar_year.id, StudentCharity.calendar_month == calendar_month.id).count()
-    percentage = round((students_charities / len(group.student)) * 100)
+    if students_charities:
+        percentage = round((students_charities / len(group.student)) * 100)
     students_attendanced_count = db.session.query(Students).join(Students.attendance).options(
         contains_eager(Students.attendance)).filter(
         Attendance.group_id == group.id, Attendance.student_id.in_(student_ids),
         Attendance.calendar_year == calendar_year.id, Attendance.calendar_month == calendar_month.id).count()
-    attendance_percentage = round((students_attendanced_count / len(group.student)) * 100)
+    if students_attendanced_count:
+        attendance_percentage = round((students_attendanced_count / len(group.student)) * 100)
     info = {
         "discount_summ": discount_summ,
         "discount_percentage": percentage,
@@ -253,22 +261,12 @@ def group_profile(group_id):
         }
     subject_levels = SubjectLevels.query.filter(SubjectLevels.subject_id == group.subject_id).order_by(
         SubjectLevels.id).all()
-    test_info = []
-    for level in subject_levels:
-        group_tests = GroupTest.query.filter(GroupTest.group_id == group_id,
-                                             GroupTest.calendar_year == calendar_year.id,
-                                             GroupTest.calendar_month == calendar_month.id,
-                                             GroupTest.level_id == level.id).all()
-        test_percentage = 0
-        for test in group_tests:
-            test_percentage += test.percentage if test.percentage else 0
 
-        info = {
-            "level": level.name,
-            "percentage": round(test_percentage / len(group_tests)) if group_tests else 0
-        }
-        test_info.append(info)
-    pprint.pprint(test_info)
+    group_tests = GroupTest.query.filter(GroupTest.group_id == group_id,
+                                         GroupTest.calendar_year == calendar_year.id,
+                                         GroupTest.calendar_month == calendar_month.id,
+                                         ).all()
+
     test_status = GroupTest.query.filter(GroupTest.group_id == group_id, GroupTest.calendar_year == calendar_year.id,
                                          GroupTest.calendar_month == calendar_month.id,
                                          GroupTest.student_tests == None).first()
@@ -277,9 +275,9 @@ def group_profile(group_id):
                                        GroupTest.student_tests != None).order_by(desc(GroupTest.id)).first()
 
     if test_status:
-        msg = f"Guruhda {test_status.day.date.strftime('%d')} kuni {test_status.subject_level.name} leveli bo'yicha test olinishi kerak."
+        msg = f"Guruhda {test_status.day.date.strftime('%d')} kuni {test_status.level} leveli bo'yicha test olinishi kerak."
     elif last_test and not test_status:
-        msg = f"Guruhda oxirgi marta {last_test.day.date.strftime('%d')} kuni {last_test.subject_level.name} leveli bo'yicha test olingan."
+        msg = f"Guruhda oxirgi marta {last_test.day.date.strftime('%d')} kuni {last_test.level} leveli bo'yicha test olingan."
     else:
         msg = f"Guruh uchun {calendar_month.date.strftime('%B')} oyi uchun test kuni belgilanmagan."
     return jsonify({
@@ -295,7 +293,7 @@ def group_profile(group_id):
         "links": links,
         "levels": iterate_models(levels),
         "isTime": is_time,
-        "test_info": test_info,
+        "test_info": iterate_models(group_tests),
         "msg": msg
     })
 
