@@ -190,5 +190,10 @@ class StudentTest(db.Model):
             "true_answers": self.true_answers,
             "student_name": self.student.user.name,
             "student_surname": self.student.user.surname,
-            "student_id": self.student.user.id
+            "student_id": self.student.user.id,
+            "test_info": {
+                "id": self.group_test.id,
+                "name": self.group_test.name,
+                "level": self.group_test.level
+            }
         }

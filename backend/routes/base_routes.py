@@ -16,7 +16,7 @@ from backend.models.models import CourseTypes, Students, Users, Staff, \
     PhoneList, Roles, Group_Room_Week, Locations, Professions, Teachers, Subjects, Week, AccountingInfo, Groups, \
     AttendanceHistoryStudent, PaymentTypes, StudentExcuses, SubjectLevels, EducationLanguage, Contract_Students, \
     CalendarYear, StaffSalary, DeletedStudents, GroupReason, TeacherGroupStatistics, CalendarMonth, CalendarDay, \
-    Advantages, Link, TeacherData
+    Advantages, Link, TeacherData, StudentTest, GroupTest
 from datetime import datetime
 from pprint import pprint
 
@@ -638,51 +638,52 @@ def profile(user_id):
     user_get = Users.query.filter(Users.id == user_id).first()
     student_get = Students.query.filter(Students.user_id == user_id).first()
     teacher_get = Teachers.query.filter(Teachers.user_id == user_id).first()
-    if teacher_get:
-        deleted_students = DeletedStudents.query.filter(DeletedStudents.teacher_id == teacher_get.id).order_by(
-            DeletedStudents.id).all()
-        deleted_students_len = DeletedStudents.query.filter(DeletedStudents.teacher_id == teacher_get.id).order_by(
-            DeletedStudents.id).count()
-        groups = Groups.query.filter(Groups.teacher_id == teacher_get.id).all()
-        students = db.session.query(Students).join(Students.group).options(contains_eager(Students.group)).filter(
-            Groups.id.in_([gr.id for gr in groups]), ~Students.id.in_([st.id for st in deleted_students])).all()
-        teacher_get.total_students = len(students) + deleted_students_len
-        db.session.commit()
-        group_reasons = GroupReason.query.order_by(GroupReason.id).all()
-        month_list = CalendarMonth.query.order_by(CalendarMonth.date).all()
+    # if teacher_get:
+    # deleted_students = DeletedStudents.query.filter(DeletedStudents.teacher_id == teacher_get.id).order_by(
+    #     DeletedStudents.id).all()
+    # deleted_students_len = DeletedStudents.query.filter(DeletedStudents.teacher_id == teacher_get.id).order_by(
+    #     DeletedStudents.id).count()
+    # groups = Groups.query.filter(Groups.teacher_id == teacher_get.id).all()
+    # students = db.session.query(Students).join(Students.group).options(contains_eager(Students.group)).filter(
+    #     Groups.id.in_([gr.id for gr in groups]), ~Students.id.in_([st.id for st in deleted_students])).all()
+    # teacher_get.total_students = len(students) + deleted_students_len
+    # db.session.commit()
+    # group_reasons = GroupReason.query.order_by(GroupReason.id).all()
+    # month_list = CalendarMonth.query.order_by(CalendarMonth.date).all()
+    #
+    # for month in month_list:
+    #     for reason in group_reasons:
+    #         deleted_students_total = DeletedStudents.query.filter(
+    #             DeletedStudents.teacher_id == teacher_get.id).join(DeletedStudents.day).filter(
+    #             extract("month", CalendarDay.date) == int(month.date.strftime("%m")),
+    #             extract("year", CalendarDay.date) == int(month.date.strftime("%Y"))).count()
+    #         deleted_students_list = DeletedStudents.query.filter(DeletedStudents.teacher_id == teacher_get.id,
+    #                                                              DeletedStudents.reason_id == reason.id,
+    #                                                              ).join(DeletedStudents.day).filter(
+    #             extract("month", CalendarDay.date) == int(month.date.strftime("%m")),
+    #             extract("year", CalendarDay.date) == int(month.date.strftime("%Y"))).count()
+    #         if deleted_students_total:
+    #             result = round((deleted_students_list / deleted_students_total) * 100)
+    #             teacher_statistics = TeacherGroupStatistics.query.filter(
+    #                 TeacherGroupStatistics.reason_id == reason.id,
+    #                 TeacherGroupStatistics.calendar_month == month.id,
+    #                 TeacherGroupStatistics.calendar_year == month.year_id,
+    #                 TeacherGroupStatistics.teacher_id == teacher_get.id).first()
+    #             if not teacher_statistics:
+    #                 teacher_statistics = TeacherGroupStatistics(
+    #                     reason_id=reason.id,
+    #                     calendar_month=month.id,
+    #                     calendar_year=month.year_id,
+    #                     percentage=result,
+    #                     number_students=deleted_students_list,
+    #                     teacher_id=teacher_get.id)
+    #                 teacher_statistics.add()
+    #             else:
+    #
+    #                 teacher_statistics.number_students = deleted_students_list
+    #                 teacher_statistics.percentage = result
+    #                 db.session.commit()
 
-        for month in month_list:
-            for reason in group_reasons:
-                deleted_students_total = DeletedStudents.query.filter(
-                    DeletedStudents.teacher_id == teacher_get.id).join(DeletedStudents.day).filter(
-                    extract("month", CalendarDay.date) == int(month.date.strftime("%m")),
-                    extract("year", CalendarDay.date) == int(month.date.strftime("%Y"))).count()
-                deleted_students_list = DeletedStudents.query.filter(DeletedStudents.teacher_id == teacher_get.id,
-                                                                     DeletedStudents.reason_id == reason.id,
-                                                                     ).join(DeletedStudents.day).filter(
-                    extract("month", CalendarDay.date) == int(month.date.strftime("%m")),
-                    extract("year", CalendarDay.date) == int(month.date.strftime("%Y"))).count()
-                if deleted_students_total:
-                    result = round((deleted_students_list / deleted_students_total) * 100)
-                    teacher_statistics = TeacherGroupStatistics.query.filter(
-                        TeacherGroupStatistics.reason_id == reason.id,
-                        TeacherGroupStatistics.calendar_month == month.id,
-                        TeacherGroupStatistics.calendar_year == month.year_id,
-                        TeacherGroupStatistics.teacher_id == teacher_get.id).first()
-                    if not teacher_statistics:
-                        teacher_statistics = TeacherGroupStatistics(
-                            reason_id=reason.id,
-                            calendar_month=month.id,
-                            calendar_year=month.year_id,
-                            percentage=result,
-                            number_students=deleted_students_list,
-                            teacher_id=teacher_get.id)
-                        teacher_statistics.add()
-                    else:
-
-                        teacher_statistics.number_students = deleted_students_list
-                        teacher_statistics.percentage = result
-                        db.session.commit()
     staff_get = Staff.query.filter(Staff.user_id == user_id).first()
     director_get = Users.query.filter(Users.id == user_id).first()
     refresh_age(user_get.id)
@@ -726,7 +727,13 @@ def profile(user_id):
             AttendanceHistoryStudent.student_id == student_get.id).all()
 
         rate_list = [{"subject": rate.subject.name, "degree": rate.average_ball} for rate in current_rates]
-
+        group_tests = GroupTest.query.filter(GroupTest.calendar_month == calendar_month.id,
+                                             GroupTest.calendar_year == calendar_year.id,
+                                             GroupTest.group_id.in_([gr_id.id for gr_id in student_get.group])).order_by(
+            GroupTest.id).all()
+        student_tests = StudentTest.query.filter(
+            StudentTest.group_test_id.in_([test_id.id for test_id in group_tests]),
+            StudentTest.student_id == student_get.id).order_by(StudentTest.id).all()
         link = {
             "link": "studentPayment",
             "title": "To'lov",
@@ -935,7 +942,7 @@ def profile(user_id):
             },
 
             "rate": rate_list,
-
+            "tests": iterate_models(student_tests),
             "groups": group_list,
             "subjects": subject_list,
             "links": links,
