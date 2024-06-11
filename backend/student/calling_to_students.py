@@ -163,7 +163,7 @@ def new_students_calling(location_id):
 def student_in_debts(location_id):
     # tasks
     today = datetime.today()
-    date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
+    # date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
     completed_tasks = []

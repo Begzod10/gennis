@@ -68,7 +68,6 @@ def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted != True).all()
         lead_infos = LeadInfos.query.filter(extract("day", LeadInfos.added_date) == int(calendar_day.date.strftime("%d")),
                                             LeadInfos.lead_id.in_([lead.id for lead in leads])).count()
-        print('lead_count', lead_infos)
         TasksStatistics.query.filter_by(id=task_statistics.id).update({
             'completed_tasks': lead_infos,
         })
@@ -86,9 +85,7 @@ def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type
             calendar_day=calendar_day.id,
             location_id=info.lead.location_id
         ).all()
-
         completed_tasks = sum(stat.completed_tasks for stat in overall_location_statistics)
-        print(completed_tasks)
         tasks_daily_statistics = TaskDailyStatistics.query.filter_by(
             user_id=user.id,
             location_id=updated_task_statistics.location_id,
