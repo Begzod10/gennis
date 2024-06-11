@@ -154,32 +154,18 @@ def new_students_calling(location_id):
         tasks_daily_statistics.completed_tasks = call_overall
         tasks_daily_statistics.completed_tasks_percentage = completed_tasks_percentage
         db.session.commit()
-        return jsonify({"student": {'id': student.id}})
+        return jsonify({'msg': "Komment belgilandi", "student": {'id': student.id}})
 
 
 @app.route(f'{api}/student_in_debts', defaults={"location_id": None}, methods=["POST", "GET"])
 @app.route(f'{api}/student_in_debts/<int:location_id>', methods=["POST", "GET"])
 @jwt_required()
 def student_in_debts(location_id):
-    # tasks
     today = datetime.today()
     # date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
     completed_tasks = []
-
-    # student_excuses = StudentExcuses.query.filter(StudentExcuses.added_date == date_strptime).all()
-    # for task_statistic in student_excuses:
-    #     db.session.delete(task_statistic)
-    #     db.session.commit()
-    # task_statistics = TasksStatistics.query.all()
-    # for task_statistic in task_statistics:
-    #     db.session.delete(task_statistic)
-    #     db.session.commit()
-    # task_daily_statistics = TaskDailyStatistics.query.all()
-    # for task_statistic in task_daily_statistics:
-    #     db.session.delete(task_statistic)
-    #     db.session.commit()
 
     if request.method == "GET":
 
@@ -206,10 +192,11 @@ def student_in_debts(location_id):
 
         if to_date:
             to_date = datetime.strptime(to_date, "%Y-%m-%d")
-
+        next_day = datetime.strptime(f'{today.year}-{today.month}-{int(today.day) + 1}', "%Y-%m-%d")
         student = Students.query.filter(Students.user_id == user_id).first()
-        new_excuse = StudentExcuses(reason=reason if select == "yes" else "tel ko'tarmadi",
-                                    to_date=to_date if select == "yes" else None, added_date=calendar_day.date,
+        new_excuse = StudentExcuses(reason=reason if select == "tel ko'tardi" else "tel ko'tarmadi",
+                                    to_date=to_date if select == "tel ko'tardi" else next_day,
+                                    added_date=calendar_day.date,
                                     student_id=student.id)
         db.session.add(new_excuse)
         db.session.commit()
@@ -249,12 +236,12 @@ def student_in_debts(location_id):
         completed_tasks_percentage = round((
                                                    overall_complete / tasks_daily_statistics.in_progress_tasks) * 100 if tasks_daily_statistics.in_progress_tasks > 0 else 0)
 
-
         tasks_daily_statistics.completed_tasks = overall_complete
         tasks_daily_statistics.completed_tasks_percentage = completed_tasks_percentage
         db.session.commit()
 
         return jsonify({"student": {
+            'msg': "Komment belgilandi",
             'id': student.user.id
         }})
 
@@ -311,7 +298,7 @@ def change_statistics(location_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
-
+    print(location_id)
     location = Locations.query.filter(Locations.id == location_id).first()
     locations_info = {
         location.id: {

@@ -81,6 +81,7 @@ def crud_lead(pm):
         db.session.commit()
         update_task_statistics(user, status, calendar_day, location_id, task_type)
         change_statistics(location_id)
+
         return jsonify({"msg": "O'quvchi o'chirildi", "success": True, })
     if request.method == "POST":
         comment = get_json_field('comment')

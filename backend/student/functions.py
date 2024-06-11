@@ -33,7 +33,7 @@ def get_student_info(student):
                 info['payment_reason'] = "tel ko'tardi"
 
     if student.excuses:
-        if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[-1].to_date <= date_strptime:
+        if  student.excuses[-1].to_date <= date_strptime:
             for exc in student.excuses:
                 if exc.to_date and exc.added_date:
                     info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),

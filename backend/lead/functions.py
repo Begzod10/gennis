@@ -7,6 +7,7 @@ def update_task_statistics(user, status, calendar_day, location_id, task_type):
     def update_statistics(task_statistics, completed_tasks_delta):
         completed_tasks = max(task_statistics.completed_tasks + completed_tasks_delta, 0)
         in_progress_tasks = task_statistics.in_progress_tasks - 1
+
         completed_tasks_percentage = (completed_tasks / in_progress_tasks * 100) if in_progress_tasks else 0
 
         TasksStatistics.query.filter_by(id=task_statistics.id).update({
@@ -43,7 +44,6 @@ def update_task_statistics(user, status, calendar_day, location_id, task_type):
         tasks_daily_statistics = TaskDailyStatistics.query.filter_by(
             user_id=user.id, location_id=location_id, calendar_day=calendar_day.id
         ).first()
-
         completed_tasks_percentage = (
                 total_completed_tasks / tasks_daily_statistics.in_progress_tasks * 100) if total_completed_tasks else 0
         TaskDailyStatistics.query.filter_by(
@@ -53,9 +53,25 @@ def update_task_statistics(user, status, calendar_day, location_id, task_type):
             'completed_tasks_percentage': completed_tasks_percentage
         })
         db.session.commit()
-
     else:
         update_statistics(task_statistics, completed_tasks_delta=0)
+        overall_statistics = TasksStatistics.query.filter_by(
+            user_id=user.id, calendar_day=calendar_day.id, location_id=location_id
+        ).all()
+
+        total_completed_tasks = sum(stat.completed_tasks for stat in overall_statistics)
+        tasks_daily_statistics = TaskDailyStatistics.query.filter_by(
+            user_id=user.id, location_id=location_id, calendar_day=calendar_day.id
+        ).first()
+        completed_tasks_percentage = (
+                total_completed_tasks / tasks_daily_statistics.in_progress_tasks * 100) if total_completed_tasks else 0
+        TaskDailyStatistics.query.filter_by(
+            user_id=user.id, location_id=location_id, calendar_day=calendar_day.id
+        ).update({
+            'completed_tasks': total_completed_tasks,
+            'completed_tasks_percentage': completed_tasks_percentage
+        })
+        db.session.commit()
 
 
 def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type, location_id):
