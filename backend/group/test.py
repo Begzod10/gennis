@@ -28,7 +28,7 @@ def create_test(group_id):
         test.add()
         return jsonify({
             "status": True,
-            "msg": "Test yaratildi.",
+            "msg": "Texst yaratildi.",
             "test": test.convert_json()
         })
     elif request.method == "DELETE":
