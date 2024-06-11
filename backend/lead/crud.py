@@ -48,7 +48,7 @@ def register_lead():
 @jwt_required()
 def get_leads_location(status, location_id):
     if status == "news":
-        change_statistics()
+        change_statistics(location_id)
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False).order_by(desc(Lead.id)).all()
 
         return jsonify({
@@ -80,12 +80,13 @@ def crud_lead(pm):
         lead.comment = comment
         db.session.commit()
         update_task_statistics(user, status, calendar_day, location_id, task_type)
-        change_statistics()
+        change_statistics(location_id)
         return jsonify({"msg": "O'quvchi o'chirildi", "success": True, })
     if request.method == "POST":
         comment = get_json_field('comment')
         date = get_json_field('date')
         date = datetime.strptime(date, '%Y-%m-%d')
+        location_id = get_json_field('location_id')
         added_date = datetime.strptime(f'{today.year}-{today.month}-{today.day}', '%Y-%m-%d')
         info = {
             "lead_id": lead.id,
@@ -95,7 +96,7 @@ def crud_lead(pm):
         }
         info = LeadInfos(**info)
         info.add()
-        update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type)
+        update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type, location_id)
         return jsonify({
             "msg": "Komment belgilandi",
             "success": True,

@@ -177,7 +177,6 @@ class StudentTest(db.Model):
     group_test_id = Column(Integer, ForeignKey('group_test.id'))
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
-    level_id = Column(Integer, ForeignKey('subjectlevels.id'))
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
 
     def add(self):
@@ -191,5 +190,10 @@ class StudentTest(db.Model):
             "true_answers": self.true_answers,
             "student_name": self.student.user.name,
             "student_surname": self.student.user.surname,
-            "student_id": self.student.user.id
+            "student_id": self.student.user.id,
+            "test_info": {
+                "id": self.group_test.id,
+                "name": self.group_test.name,
+                "level": self.group_test.level
+            }
         }

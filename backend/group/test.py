@@ -23,7 +23,7 @@ def create_test(group_id):
         year, month, day = get_or_creat_datetime(year, month, day)
         group = Groups.query.filter(Groups.id == group_id).first()
         test = GroupTest(name=get_json_field('name'), group_id=group_id, subject_id=group.subject_id,
-                         level_id=get_json_field('level'), calendar_year=year.id, calendar_month=month.id,
+                         level=get_json_field('level'), calendar_year=year.id, calendar_month=month.id,
                          calendar_day=day.id, number_tests=get_json_field('number'))
         test.add()
         return jsonify({
@@ -46,7 +46,7 @@ def create_test(group_id):
         day = get_json_field('date')[8:]
         year, month, day = get_or_creat_datetime(year, month, day)
         test_get.name = get_json_field('name')
-        test_get.level_id = get_json_field('level')
+        test_get.level = get_json_field('level')
         test_get.calendar_year = year.id
         test_get.calendar_day = day.id
         test_get.calendar_month = month.id
@@ -83,7 +83,6 @@ def filter_datas_in_group(group_id):
         return jsonify({
             "years_list": years_list,
             "month_list": month_list,
-            "levels": iterate_models(subject_levels),
             "current_year": calendar_year.date.strftime("%Y"),
             "current_month": calendar_month.date.strftime("%m"),
         })
@@ -135,8 +134,8 @@ def submit_test_group(group_id):
                                                   StudentTest.group_test_id == group_test.id,
                                                   StudentTest.calendar_day == group_test.calendar_day).first()
             if not exist_test:
-                add_test_result = StudentTest(subject_id=group.subject_id, level_id=group_test.level_id,
-                                              group_test_id=group_test.id, calendar_day=group_test.calendar_day,
+                add_test_result = StudentTest(subject_id=group.subject_id, group_test_id=group_test.id,
+                                              calendar_day=group_test.calendar_day,
                                               student_id=student_get.id, true_answers=true_answers,
                                               percentage=percentage, group_id=group_id)
                 add_test_result.add()
@@ -153,42 +152,3 @@ def submit_test_group(group_id):
         })
 
 
-@app.route(f'{api}/get_subject_date/<int:group_id>', methods=["POST", "GET"])
-@jwt_required()
-def get_subject_date(group_id):
-    now = datetime.now()
-    current_year = now.year
-    current_month = now.month
-    _, num_days = calendar.monthrange(current_year, current_month)
-    group = Groups.query.filter(Groups.id == group_id).first()
-    info = {
-        'subject': {
-            'id': group.subject.id,
-            'name': group.subject.name,
-            'levels': [],
-            'calendar': {
-                'year': current_year,
-                'month': current_month,
-                'days': list(range(1, num_days + 1))
-            }
-        }
-    }
-    for level in group.subject.subject_level:
-        level_date = {
-            'id': level.id,
-            'name': level.name,
-            'subject_id': group.subject.id
-        }
-        info['subject']['levels'].append(level_date)
-    return jsonify({
-        "info": info
-    })
-
-
-@app.route(f'{api}/group_subject/<int:group_id>', methods=["POST", "GET"])
-def group_subject(group_id):
-    group = Groups.query.filter(Groups.id == group_id).first()
-    send_subject_server(classroom_server, group.subject)
-    return jsonify({
-        "status": True
-    })

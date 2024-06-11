@@ -11,7 +11,7 @@ def get_student_info(student):
         "id": student.user.id,
         "name": student.user.name.title(),
         "surname": student.user.surname.title(),
-        "status": ["green", "yellow", "red"][student.debtor],
+        "status": ["green", "yellow", "red"][student.debtor] if student.debtor < 2 else ["green", "yellow", "red"][2],
         "phone": student.user.phone[0].phone,
         "balance": student.user.balance,
         "teacher": [str(teacher.user_id) for gr in student.group for teacher in
@@ -33,17 +33,13 @@ def get_student_info(student):
                 info['payment_reason'] = "tel ko'tardi"
 
     if student.excuses:
-        if student.excuses[-1].reason == "tel ko'tarmadi":
-            info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
-                                'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
-                                'comment': exc.reason} for exc in student.excuses]
+        if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[-1].to_date <= date_strptime:
+            for exc in student.excuses:
+                if exc.to_date and exc.added_date:
+                    info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
+                                        'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
+                                        'comment': exc.reason}]
             return info
-        else:
-            if student.excuses[-1].to_date <= date_strptime:
-                info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
-                                    'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
-                                    'comment': exc.reason} for exc in student.excuses]
-                return info
     else:
         return info
 
@@ -56,7 +52,7 @@ def get_completed_student_info(student):
         "id": student.user.id,
         "name": student.user.name.title(),
         "surname": student.user.surname.title(),
-        "status": ["green", "yellow", "red"][student.debtor],
+        "status": ["green", "yellow", "red"][student.debtor] if student.debtor < 2 else ["green", "yellow", "red"][2],
         "phone": student.user.phone[0].phone,
         "balance": student.user.balance,
         "teacher": [str(teacher.user_id) for gr in student.group for teacher in
@@ -76,10 +72,12 @@ def get_completed_student_info(student):
                 info['reason'] = reason.reason
                 info['reason_days'] = reason.to_date.strftime("%Y-%m-%d")
                 info['payment_reason'] = "tel ko'tardi"
-
+        return info
     if student.excuses and student.excuses[-1].added_date == date_strptime and student.excuses[
         -1].reason != "tel ko'tarmadi" and student.excuses[-1].to_date > date_strptime:
-        info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
-                            'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
-                            'comment': exc.reason} for exc in student.excuses]
+        for exc in student.excuses:
+            if exc.added_date:
+                info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
+                                    'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
+                                    'comment': exc.reason}]
         return info

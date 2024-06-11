@@ -204,7 +204,7 @@ class GroupTest(db.Model):
     name = Column(String)
     group_id = Column(Integer, ForeignKey('groups.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
-    level_id = Column(Integer, ForeignKey('subjectlevels.id'))
+    level = Column(String)
     number_tests = Column(Integer)
     calendar_year = Column(Integer, ForeignKey('calendaryear.id'))
     calendar_month = Column(Integer, ForeignKey('calendarmonth.id'))
@@ -227,6 +227,6 @@ class GroupTest(db.Model):
             "students": [item.convert_json() for item in self.student_tests],
             "number": self.number_tests,
             "status": True if self.student_tests else False,
-            "level_id": self.level_id,
+            "level": self.level,
             "percentage": self.percentage
         }

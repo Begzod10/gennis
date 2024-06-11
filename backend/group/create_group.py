@@ -730,7 +730,39 @@ def filtered_groups(group_id):
         info['teacherName'] = teacher.user.name.title()
         info['teacherSurname'] = teacher.user.surname.title()
         list_group.append(info)
-    print(list_group)
+    return jsonify({
+        "groups": list_group
+    })
+
+
+@app.route(f'{api}/filtered_groups2/<int:location_id>')
+@jwt_required()
+def filtered_groups2(location_id):
+    groups = Groups.query.filter(Groups.location_id == location_id,
+
+                                 Groups.teacher_id != None, Groups.time_table != None).filter(
+        or_(Groups.deleted == None, Groups.deleted == False)).order_by('id').all()
+    list_group = []
+    for gr in groups:
+        if gr.status:
+            status = "True"
+        else:
+            status = "False"
+        info = {
+            "id": gr.id,
+            "name": gr.name.title(),
+            "teacherID": gr.teacher_id,
+            "subjects": gr.subject.name.title(),
+            "payment": gr.price,
+            "typeOfCourse": gr.course_type.name,
+            "studentsLength": len(gr.student),
+            "status": status,
+        }
+        teacher = Teachers.query.filter(Teachers.id == gr.teacher_id).first()
+
+        info['teacherName'] = teacher.user.name.title()
+        info['teacherSurname'] = teacher.user.surname.title()
+        list_group.append(info)
     return jsonify({
         "groups": list_group
     })
@@ -942,6 +974,7 @@ def delete_student():
                 db.session.commit()
     else:
         reason = request.get_json()['otherReason']
+        student.user.comment = reason
         add = RegisterDeletedStudents(student_id=student.id, reason=reason, calendar_day=calendar_day.id)
         db.session.add(add)
         db.session.commit()
