@@ -377,6 +377,9 @@ def get_user():
     })
 
 
+
+
+
 @app.route(f'{api}/get_group_datas/<int:group_id>')
 @jwt_required()
 def get_group_datas(group_id):

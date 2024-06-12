@@ -1,6 +1,8 @@
 from backend.models.models import db, extract
-
+from backend.functions.utils import desc
 from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics, LeadInfos, Lead
+from datetime import datetime
+from backend.functions.utils import find_calendar_date
 
 
 def update_task_statistics(user, status, calendar_day, location_id, task_type):
@@ -82,8 +84,9 @@ def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type
             location_id=info.lead.location_id
         ).first()
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted != True).all()
-        lead_infos = LeadInfos.query.filter(extract("day", LeadInfos.added_date) == int(calendar_day.date.strftime("%d")),
-                                            LeadInfos.lead_id.in_([lead.id for lead in leads])).count()
+        lead_infos = LeadInfos.query.filter(
+            extract("day", LeadInfos.added_date) == int(calendar_day.date.strftime("%d")),
+            LeadInfos.lead_id.in_([lead.id for lead in leads])).count()
         TasksStatistics.query.filter_by(id=task_statistics.id).update({
             'completed_tasks': lead_infos,
         })
@@ -107,7 +110,8 @@ def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type
             location_id=updated_task_statistics.location_id,
             calendar_day=calendar_day.id
         ).first()
-        completed_tasks_percentage = round((completed_tasks / tasks_daily_statistics.in_progress_tasks) * 100) if completed_tasks else 0
+        completed_tasks_percentage = round(
+            (completed_tasks / tasks_daily_statistics.in_progress_tasks) * 100) if completed_tasks else 0
 
         TaskDailyStatistics.query.filter_by(
             user_id=user.id,
@@ -118,3 +122,75 @@ def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type
             'completed_tasks_percentage': completed_tasks_percentage
         })
         db.session.commit()
+
+
+def get_lead_tasks(lead):
+    today = datetime.today()
+    date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
+    history = []
+    if lead.infos:
+        for info in lead.infos:
+            history.append(info.convert_json())
+    if lead.infos:
+        if lead.infos[-1].day <= date_strptime:
+            day = lead.infos[-1].day
+            lead_day = int(day.strftime("%d"))
+            current_month = int(datetime.today().strftime("%m"))
+            current_day = int(datetime.today().strftime("%d"))
+            lead_month = int(day.strftime("%m"))
+            if current_month == lead_month:
+                index = current_day - lead_day
+                if index > 1:
+                    index = 1
+                if index < 0:
+                    index = 0
+            else:
+                index = 1
+            return {
+                "id": lead.id,
+                "name": lead.name,
+                "phone": lead.phone,
+                "day": lead.day.date.strftime("%Y-%m-%d"),
+                "deleted": lead.deleted,
+                "comment": lead.comment,
+                "status": ['yellow', 'red'][index],
+                "history": history,
+                "subjects": [subject.convert_json() for subject in lead.subject]
+            }
+    else:
+        index = 1
+        print()
+        return {
+            "id": lead.id,
+            "name": lead.name,
+            "phone": lead.phone,
+            "day": lead.day.date.strftime("%Y-%m-%d"),
+            "deleted": lead.deleted,
+            "comment": lead.comment,
+            "status": ['yellow', 'red'][index],
+            "history": history,
+            "subjects": [subject.convert_json() for subject in lead.subject]
+        }
+
+
+def get_completed_lead_tasks(lead):
+    today = datetime.today()
+    date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
+    history = []
+    if lead.infos:
+        for info in lead.infos:
+            history.append(info.convert_json())
+    if lead.infos:
+        print(lead.infos[-1].added_date, date_strptime)
+        if lead.infos[-1].added_date == date_strptime:
+            return {
+                "id": lead.id,
+                "name": lead.name,
+                "phone": lead.phone,
+                "day": lead.day.date.strftime("%Y-%m-%d"),
+                "deleted": lead.deleted,
+                "comment": lead.comment,
+                "status": 'green',
+                "history": history,
+                "subjects": [subject.convert_json() for subject in lead.subject]
+            }
