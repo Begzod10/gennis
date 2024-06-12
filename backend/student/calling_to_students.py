@@ -298,7 +298,6 @@ def change_statistics(location_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
-    print(location_id)
     location = Locations.query.filter(Locations.id == location_id).first()
     locations_info = {
         location.id: {
