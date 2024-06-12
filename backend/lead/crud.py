@@ -8,7 +8,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
 from backend.student.calling_to_students import change_statistics
 from backend.models.models import Users
-from backend.lead.functions import update_task_statistics, update_posted_tasks
+from backend.lead.functions import update_task_statistics, update_posted_tasks, get_lead_tasks, \
+    get_completed_lead_tasks
 
 
 @app.route(f'{api}/register_lead', methods=['POST'])
@@ -50,9 +51,19 @@ def get_leads_location(status, location_id):
     if status == "news":
         change_statistics(location_id)
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False).order_by(desc(Lead.id)).all()
+        leads_info = []
+        completed_tasks = []
+        for lead in leads:
+            if get_lead_tasks(lead) != None:
+                leads_info.append(get_lead_tasks(lead))
+            if get_completed_lead_tasks(lead) != None:
+                completed_tasks.append(get_completed_lead_tasks(lead))
 
+        print(leads_info)
+        print(completed_tasks)
         return jsonify({
-            "leads": iterate_models(leads)
+            "leads": leads_info,
+            'completed_tasks': completed_tasks
         })
     else:
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == True).order_by(desc(Lead.id)).all()
