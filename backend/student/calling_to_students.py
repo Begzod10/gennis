@@ -415,10 +415,10 @@ def update_tasks_in_progress(location_id):
             else:
                 tasks_count += 1
         if int(task_statistic_excuses.in_progress_tasks) < tasks_count:
-            excuses_students.in_progress_tasks = tasks_count
+            task_statistic_excuses.in_progress_tasks = tasks_count
             db.session.commit()
             percentage = (
-                                 excuses_students.completed_tasks / excuses_students.in_progress_tasks) * 100 if excuses_students.in_progress_tasks > 0 else 0
+                                 excuses_students.completed_tasks / excuses_students.in_progress_tasks) * 100 if task_statistic_excuses.in_progress_tasks > 0 else 0
             excuses_students.completed_tasks_percentage = percentage
             db.session.commit()
             daily_task = TaskDailyStatistics.query.filter_by(location_id=location_id,
