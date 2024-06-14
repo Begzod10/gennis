@@ -112,8 +112,8 @@ def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     username_sign = Users.query.filter_by(user_id=identity).first()
-    role = Roles.query.filter(Roles.id == username_sign.role_id).first() if username_sign else {}
 
+    role = Roles.query.filter(Roles.id == username_sign.role_id).first() if username_sign else {}
     if username_sign.teacher:
         data = TeacherData.query.filter(TeacherData.teacher_id == username_sign.teacher.id).first()
     else:
@@ -124,6 +124,7 @@ def refresh():
         "name": username_sign.name.title(),
         "id": username_sign.id,
         "access_token": access_token,
+        "refresh_token": create_refresh_token(identity=username_sign.user_id),
         "role": role.role if role else "",
         "profile_photo": username_sign.photo_profile,
         "observer": username_sign.observer,
@@ -729,7 +730,8 @@ def profile(user_id):
         rate_list = [{"subject": rate.subject.name, "degree": rate.average_ball} for rate in current_rates]
         group_tests = GroupTest.query.filter(GroupTest.calendar_month == calendar_month.id,
                                              GroupTest.calendar_year == calendar_year.id,
-                                             GroupTest.group_id.in_([gr_id.id for gr_id in student_get.group])).order_by(
+                                             GroupTest.group_id.in_(
+                                                 [gr_id.id for gr_id in student_get.group])).order_by(
             GroupTest.id).all()
         student_tests = StudentTest.query.filter(
             StudentTest.group_test_id.in_([test_id.id for test_id in group_tests]),
