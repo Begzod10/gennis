@@ -165,6 +165,7 @@ def student_in_debts(location_id):
     today = datetime.today()
     # date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
+    april = datetime.strptime("2024-03", "%Y-%m")
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
     completed_tasks = []
 
@@ -177,10 +178,18 @@ def student_in_debts(location_id):
             Students.deleted_from_register == None).all()
         payments_list = []
         for student in students:
-            if get_student_info(student) != None:
-                payments_list.append(get_student_info(student))
-            if get_completed_student_info(student) != None:
-                completed_tasks.append(get_completed_student_info(student))
+            if student.deleted_from_group:
+                if student.deleted_from_group[-1].day.month.date >= april:
+
+                    if get_student_info(student) != None:
+                        payments_list.append(get_student_info(student))
+                    if get_completed_student_info(student) != None:
+                        completed_tasks.append(get_completed_student_info(student))
+            else:
+                if get_student_info(student) != None:
+                    payments_list.append(get_student_info(student))
+                if get_completed_student_info(student) != None:
+                    completed_tasks.append(get_completed_student_info(student))
         return jsonify({"students": payments_list, 'completed_tasks': completed_tasks})
 
     if request.method == "POST":
@@ -295,6 +304,7 @@ def add_tasks():
 def change_statistics(location_id):
     add_tasks()
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
+    april = datetime.strptime("2024-03", "%Y-%m")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
@@ -318,12 +328,22 @@ def change_statistics(location_id):
     for student in excuses_students:
         loc_id = student.user.location_id
         if loc_id:
-            if student.excuses:
-                if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[
-                    -1].to_date <= date_strptime:
-                    locations_info[loc_id]['excuses'] += 1
+            if student.deleted_from_group:
+                if student.deleted_from_group[-1].day.month.date >= april:
+
+                    if student.excuses:
+                        if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[
+                            -1].to_date <= date_strptime:
+                            locations_info[loc_id]['excuses'] += 1
+                    else:
+                        locations_info[loc_id]['excuses'] += 1
             else:
-                locations_info[loc_id]['excuses'] += 1
+                if student.excuses:
+                    if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[
+                        -1].to_date <= date_strptime:
+                        locations_info[loc_id]['excuses'] += 1
+                else:
+                    locations_info[loc_id]['excuses'] += 1
 
     new_students = Students.query.filter(Students.group == None).join(Students.user).filter(
         Users.student != None,
@@ -334,6 +354,7 @@ def change_statistics(location_id):
         loc_id = student.user.location_id
 
         if loc_id:
+
             if student.student_calling_info:
                 if student.student_calling_info[-1].date <= date_strptime:
                     locations_info[loc_id]['new_students'] += 1
@@ -390,12 +411,14 @@ def change_statistics(location_id):
 def update_tasks_in_progress(location_id):
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
+    april = datetime.strptime("2024-03", "%Y-%m")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     task_excuses = Tasks.query.filter_by(name='excuses').first()
     task_new_students = Tasks.query.filter_by(name='new_students').first()
     task_leads = Tasks.query.filter_by(name='leads').first()
     task_statistic_excuses = TasksStatistics.query.filter_by(calendar_day=calendar_day.id, task_id=task_excuses.id,
                                                              location_id=location_id).first()
+
     task_statistic_new_students = TasksStatistics.query.filter_by(calendar_day=calendar_day.id,
                                                                   task_id=task_new_students.id,
                                                                   location_id=location_id).first()
@@ -409,17 +432,26 @@ def update_tasks_in_progress(location_id):
         tasks_count = 0
         for student in excuses_students:
             if student.excuses:
-                if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[
-                    -1].to_date <= date_strptime:
+
+                if student.deleted_from_group:
+                    if student.deleted_from_group[-1].day.month.date >= april:
+                        if student.excuses[-1].reason == "tel ko'tarmadi" or student.excuses[
+                            -1].to_date <= date_strptime:
+                            tasks_count += 1
+                else:
                     tasks_count += 1
             else:
-                tasks_count += 1
+                if student.deleted_from_group:
+                    if student.deleted_from_group[-1].day.month.date >= april:
+                        tasks_count += 1
+                else:
+                    tasks_count += 1
         if int(task_statistic_excuses.in_progress_tasks) < tasks_count:
-            excuses_students.in_progress_tasks = tasks_count
+            task_statistic_excuses.in_progress_tasks = tasks_count
             db.session.commit()
             percentage = (
-                                 excuses_students.completed_tasks / excuses_students.in_progress_tasks) * 100 if excuses_students.in_progress_tasks > 0 else 0
-            excuses_students.completed_tasks_percentage = percentage
+                                 task_statistic_excuses.completed_tasks / task_statistic_excuses.in_progress_tasks) * 100 if task_statistic_excuses.in_progress_tasks > 0 else 0
+            task_statistic_excuses.completed_tasks_percentage = percentage
             db.session.commit()
             daily_task = TaskDailyStatistics.query.filter_by(location_id=location_id,
                                                              calendar_day=calendar_day.id).first()

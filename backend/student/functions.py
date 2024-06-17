@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 def get_student_info(student):
+    april = datetime.strptime("2024-03", "%Y-%m")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
@@ -19,8 +20,13 @@ def get_student_info(student):
         "reason": "",
         "payment_reason": "tel qilinmaganlar",
         "reason_days": "",
-        'history': []
+        'history': [],
+        'deleted_date': ''
     }
+    if student.deleted_from_group:
+        if student.deleted_from_group[-1].day.month.date >= april:
+            info[
+                'deleted_date'] = f'{student.deleted_from_group[-1].day.date.year}-{student.deleted_from_group[-1].day.date.month}-{student.deleted_from_group[-1].day.date.day}'
 
     if student.reasons_list:
         for reason in student.reasons_list:
@@ -33,18 +39,20 @@ def get_student_info(student):
                 info['payment_reason'] = "tel ko'tardi"
 
     if student.excuses:
-        if student.excuses[-1].to_date <= date_strptime:
-            for exc in student.excuses:
-                if exc.to_date and exc.added_date:
-                    info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
-                                        'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
-                                        'comment': exc.reason}]
-            return info
+        if student.excuses[-1].to_date != None:
+            if student.excuses[-1].to_date <= date_strptime:
+                for exc in student.excuses:
+                    if exc.to_date and exc.added_date:
+                        info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
+                                            'to_date': exc.to_date.strftime("%Y-%m-%d") if exc.to_date else '',
+                                            'comment': exc.reason}]
+                return info
     else:
         return info
 
 
 def get_completed_student_info(student):
+    april = datetime.strptime("2024-03", "%Y-%m")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
@@ -60,8 +68,13 @@ def get_completed_student_info(student):
         "reason": "",
         "payment_reason": "tel qilinmaganlar",
         "reason_days": "",
-        'history': []
+        'history': [],
+        'deleted_date': ''
     }
+    if student.deleted_from_group:
+        if student.deleted_from_group[-1].day.month.date >= april:
+            info[
+                'deleted_date'] = f'{student.deleted_from_group[-1].day.date.year}-{student.deleted_from_group[-1].day.date.month}-{student.deleted_from_group[-1].day.date.day}'
 
     if student.reasons_list:
         for reason in student.reasons_list:
