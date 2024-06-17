@@ -314,7 +314,7 @@ def register_teacher():
             return jsonify({
                 "message": "Username is already exists",
                 "isUsername": True,
-                "isError": True,
+                "isError": True
             })
         name = get_json['name']
         surname = get_json['surname']
