@@ -15,11 +15,11 @@ db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
-<<<<<<< HEAD
+
 classroom_server = "http://192.168.68.109:5001"
-=======
+
 classroom_server = "http://192.168.68.104:5001"
->>>>>>> ab0dc033ab1b97ff88909b84e94277bb8a36eab1
+
 
 # classroom_server = "https://classroom.gennis.uz/"
 telegram_bot_server = "http://127.0.0.1:5000"

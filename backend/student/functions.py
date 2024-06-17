@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 def get_student_info(student):
+    april = datetime.strptime("2024-03", "%Y-%m")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
@@ -19,8 +20,13 @@ def get_student_info(student):
         "reason": "",
         "payment_reason": "tel qilinmaganlar",
         "reason_days": "",
-        'history': []
+        'history': [],
+        'deleted_date': ''
     }
+    if student.deleted_from_group:
+        if student.deleted_from_group[-1].day.month.date >= april:
+            info[
+                'deleted_date'] = f'{student.deleted_from_group[-1].day.date.year}-{student.deleted_from_group[-1].day.date.month}-{student.deleted_from_group[-1].day.date.day}'
 
     if student.reasons_list:
         for reason in student.reasons_list:
@@ -46,6 +52,7 @@ def get_student_info(student):
 
 
 def get_completed_student_info(student):
+    april = datetime.strptime("2024-03", "%Y-%m")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
@@ -61,8 +68,13 @@ def get_completed_student_info(student):
         "reason": "",
         "payment_reason": "tel qilinmaganlar",
         "reason_days": "",
-        'history': []
+        'history': [],
+        'deleted_date': ''
     }
+    if student.deleted_from_group:
+        if student.deleted_from_group[-1].day.month.date >= april:
+            info[
+                'deleted_date'] = f'{student.deleted_from_group[-1].day.date.year}-{student.deleted_from_group[-1].day.date.month}-{student.deleted_from_group[-1].day.date.day}'
 
     if student.reasons_list:
         for reason in student.reasons_list:
