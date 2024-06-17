@@ -316,11 +316,6 @@ def change_statistics(location_id):
             'leads': 0
         }
     }
-    # excuses_students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-    #                                                                          Users.location_id == location.id,
-    #                                                                          Students.group != None
-    #                                                                          ).filter(
-    #     Students.deleted_from_register == None).all()
     excuses_students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
                                                                              Users.location_id == location.id
                                                                              ).filter(
