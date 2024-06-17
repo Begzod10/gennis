@@ -193,7 +193,7 @@ def register():
 
         morning_shift = None
         night_shift = None
-        time = json_request['time']
+        time = json_request['shift']
         if time == "1-smen":
             morning_shift = True
         elif time == "2-smen":
@@ -208,20 +208,24 @@ def register():
 
         name = json_request['name']
         surname = json_request['surname']
-        fatherName = json_request['fatherName']
-        birthDay = int(json_request['birthDay'])
-        birthMonth = int(json_request['birthMonth'])
-        birthYear = int(json_request['birthYear'])
+        fatherName = json_request['father_name']
+        day = json_request['birth_day'][:4]
+        month = json_request['birth_day'][5:7]
+        year = json_request['birth_day'][8:]
+        birthDay = int(day)
+        birthMonth = int(month)
+        birthYear = int(year)
         phone = json_request['phone']
         phoneParent = json_request['phoneParent']
-        confirmPassword = json_request['confirmPassword']
+        confirmPassword = json_request['password_confirm']
         comment = json_request['comment']
-        location = json_request['eduCenLoc']
-        studyLang = json_request['studyLang']
+        location = json_request['location']
+        studyLang = json_request['language']
         if not studyLang:
             studyLang = "Uz"
         language = EducationLanguage.query.filter_by(id=studyLang).first()
-        password = generate_password_hash(confirmPassword, method='sha256')
+
+        password = generate_password_hash(confirmPassword, method="sha256")
 
         if not location:
             location = Locations.query.first()
@@ -314,15 +318,19 @@ def register_teacher():
             })
         name = get_json['name']
         surname = get_json['surname']
-        fatherName = get_json['fatherName']
-        birthDay = int(get_json['birthDay'])
-        birthMonth = int(get_json['birthMonth'])
-        birthYear = int(get_json['birthYear'])
+        fatherName = get_json['father_name']
+        day = get_json['birth_day'][:4]
+        month = get_json['birth_day'][5:7]
+        year = get_json['birth_day'][8:]
+        birthDay = int(day)
+        birthMonth = int(month)
+        birthYear = int(year)
         phone = get_json['phone']
-        confirmPassword = get_json['confirmPassword']
-        location = int(get_json['eduCenLoc'])
+        confirmPassword = get_json['password_confirm']
 
-        studyLang = get_json['studyLang']
+        location = int(get_json['location'])
+
+        studyLang = get_json['language']
         comment = get_json['comment']
         if not studyLang:
             studyLang = "Uz"
@@ -375,14 +383,18 @@ def register_staff():
         })
     name = get_json['name']
     surname = get_json['surname']
-    fatherName = get_json['fatherName']
-    birthDay = int(get_json['birthDay'])
-    birthMonth = int(get_json['birthMonth'])
-    birthYear = int(get_json['birthYear'])
+    pprint(get_json)
+    fatherName = get_json['father_name']
+    day = get_json['birth_day'][:4]
+    month = get_json['birth_day'][5:7]
+    year = get_json['birth_day'][8:]
+    birthDay = int(day)
+    birthMonth = int(month)
+    birthYear = int(year)
     phone = get_json['phone']
-    confirmPassword = get_json['confirmPassword']
-    location = get_json['eduCenLoc']
-    studyLang = get_json['studyLang']
+    confirmPassword = get_json['password_confirm']
+    location = get_json['location']
+    studyLang = get_json['language']
     comment = get_json['comment']
     if not studyLang:
         studyLang = "Uz"
@@ -391,10 +403,10 @@ def register_staff():
     a = datetime.today().year
     age = a - birthYear
     user_id = check_exist_id()
-    hash = generate_password_hash(confirmPassword, method='sha256')
+    hash = generate_password_hash(confirmPassword)
     location = Locations.query.filter_by(id=location).first()
     language = EducationLanguage.query.filter_by(id=studyLang).first()
-    selectedSubjects = get_json['selectedJobs'][0]['name']
+    selectedSubjects = get_json['job']
     profession = Professions.query.filter_by(name=selectedSubjects).first()
     if selectedSubjects == "Administrator":
         role = Roles.query.filter(Roles.type_role == "admin").first()
