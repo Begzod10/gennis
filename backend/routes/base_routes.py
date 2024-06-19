@@ -209,9 +209,9 @@ def register():
         name = json_request['name']
         surname = json_request['surname']
         fatherName = json_request['father_name']
-        day = json_request['birth_day'][:4]
+        year = json_request['birth_day'][:4]
         month = json_request['birth_day'][5:7]
-        year = json_request['birth_day'][8:]
+        day = json_request['birth_day'][8:]
         birthDay = int(day)
         birthMonth = int(month)
         birthYear = int(year)
@@ -233,6 +233,7 @@ def register():
 
         a = datetime.today().year
         age = a - birthYear
+        print(age)
         users = Users.query.all()
 
         if len(users) == 0:
@@ -314,14 +315,14 @@ def register_teacher():
             return jsonify({
                 "message": "Username is already exists",
                 "isUsername": True,
-                "isError": True,
+                "isError": True
             })
         name = get_json['name']
         surname = get_json['surname']
         fatherName = get_json['father_name']
-        day = get_json['birth_day'][:4]
+        year = get_json['birth_day'][:4]
         month = get_json['birth_day'][5:7]
-        year = get_json['birth_day'][8:]
+        day = get_json['birth_day'][8:]
         birthDay = int(day)
         birthMonth = int(month)
         birthYear = int(year)
@@ -385,9 +386,9 @@ def register_staff():
     surname = get_json['surname']
     pprint(get_json)
     fatherName = get_json['father_name']
-    day = get_json['birth_day'][:4]
+    year = get_json['birth_day'][:4]
     month = get_json['birth_day'][5:7]
-    year = get_json['birth_day'][8:]
+    day = get_json['birth_day'][8:]
     birthDay = int(day)
     birthMonth = int(month)
     birthYear = int(year)

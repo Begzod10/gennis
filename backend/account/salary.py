@@ -281,7 +281,6 @@ def teacher_salary_deleted_inside(salary_id, user_id):
     :return: DeletedTeacherSalaries table and DeletedStaffSalaries table data
     """
     teacher = Teachers.query.filter(Teachers.user_id == user_id).first()
-    list_salaries = []
     if teacher:
         salary = TeacherSalary.query.filter(TeacherSalary.id == salary_id).first()
 
@@ -294,7 +293,7 @@ def teacher_salary_deleted_inside(salary_id, user_id):
         salaries = DeletedStaffSalaries.query.filter(DeletedStaffSalaries.salary_id == salary_id).order_by(
             DeletedStaffSalaries.id).all()
 
-    list_salaries.append(
+    list_salaries = [
         {
             "id": sal.id,
             "salary": sal.payment_sum,
@@ -302,7 +301,7 @@ def teacher_salary_deleted_inside(salary_id, user_id):
             "payment_type": sal.payment_type.name,
             "date": sal.day.date.strftime("%Y-%m-%d")
         } for sal in salaries
-    )
+    ]
     return jsonify({
         "data": {
             "salary": salary.total_salary,

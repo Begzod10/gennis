@@ -15,7 +15,11 @@ db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
+
 classroom_server = "http://192.168.68.109:5001"
+
+
+
 
 # <<<<<<< HEAD
 # =======
