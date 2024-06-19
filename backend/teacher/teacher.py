@@ -417,7 +417,7 @@ def make_attendance():
                                             salary_per_day=salary_per_day, group_id=group_id,
                                             location_id=group.location_id, discount=discount_status,
                                             discount_per_day=discount_per_day, date=datetime.now(),
-                                            teacher_ball=ball
+                                            teacher_ball=ball, calling_status=True
                                             )
             db.session.add(attendance_add)
             db.session.commit()
@@ -432,7 +432,7 @@ def make_attendance():
                                             location_id=group.location_id, teacher_id=teacher.id,
                                             balance_with_discount=balance_with_discount,
                                             salary_per_day=salary_per_day, discount=discount_status,
-                                            discount_per_day=discount_per_day, date=datetime.now(), teacher_ball=ball
+                                            discount_per_day=discount_per_day, date=datetime.now(), teacher_ball=ball, calling_status=True
                                             )
             db.session.add(attendance_add)
             db.session.commit()
