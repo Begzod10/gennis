@@ -15,6 +15,7 @@ from backend.functions.utils import find_calendar_date, update_salary, iterate_m
 from backend.models.models import Users, Attendance, Students, AttendanceDays, Teachers, Groups, Locations, Subjects, \
     StudentCharity, Roles, TeacherBlackSalary, GroupReason, TeacherObservationDay, DeletedStudents, \
     TeacherGroupStatistics
+from backend.student.functions import get_student_info, get_completed_student_info
 
 
 @app.route(f'{api}/admin_tasks', methods=["POST", "GET"])
@@ -25,3 +26,4 @@ def admin_tasks():
         Users.location_id == user.location_id).join(Students.student_debts)
 
     return jsonify({"status": "true"})
+

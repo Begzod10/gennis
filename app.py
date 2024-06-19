@@ -15,7 +15,6 @@ db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
-
 classroom_server = "http://192.168.68.109:5001"
 
 # <<<<<<< HEAD
@@ -95,6 +94,7 @@ from backend.mobile.views import *
 
 # tasks
 from backend.tasks.admin import *
+from backend.tasks.teacher import *
 
 # teacher observation, attendance, teacher_group_statistics
 if __name__ == '__main__':

@@ -405,7 +405,7 @@ def change_statistics(location_id):
                     db.session.add(add_task_stat)
                     db.session.commit()
 
-
+    
 def update_tasks_in_progress(location_id):
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
