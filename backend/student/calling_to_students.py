@@ -220,6 +220,7 @@ def student_in_debts(number, leng, location_id):
         print(number, leng, len(students))
         print(f"Run time func: {(end1 - start1) * 10 ** 3:.03f}ms")
         print(f"Run time: {(end - start) * 10 ** 3:.03f}ms")
+
         return jsonify({"students": payments_list, 'completed_tasks': completed_tasks})
     if request.method == "POST":
         data = request.get_json()
