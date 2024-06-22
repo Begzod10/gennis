@@ -23,13 +23,9 @@ def teacher_tasks():
     for group in teacher.group:
         for student in group.student:
             student_ids.append(student.id)
-    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0
-                                                                     ).filter(
-        Students.deleted_from_register == None, Students.id.in_(student_ids)).all()
-
+    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0).filter(Students.deleted_from_register == None, Students.id.in_(student_ids)).all()
     completed_tasks = []
     payments_list = []
-
     if request.method == "GET":
         for student in students:
             if student.deleted_from_group:
@@ -79,4 +75,4 @@ def change_teacher_tasks(teacher):
                     tasks['excuses'] += 1
             else:
                 tasks['excuses'] += 1
-    print(tasks)
+
