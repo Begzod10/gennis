@@ -114,7 +114,7 @@ def refresh():
     username_sign = Users.query.filter_by(user_id=identity).first()
 
     role = Roles.query.filter(Roles.id == username_sign.role_id).first() if username_sign else {}
-    if username_sign.teacher:
+    if username_sign and username_sign.teacher:
         data = TeacherData.query.filter(TeacherData.teacher_id == username_sign.teacher.id).first()
     else:
         data = None
