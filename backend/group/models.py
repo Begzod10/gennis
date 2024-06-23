@@ -179,6 +179,7 @@ class AttendanceDays(db.Model):
     discount = Column(Boolean, default=False)
     date = Column(DateTime)
     teacher_ball = Column(Integer)
+    calling_status = Column(Boolean, default=False)
 
     def convert_json(self, entire=False):
         if self.status == 1:
