@@ -276,7 +276,7 @@ def attendance(group_id):
 
     return jsonify({
         'students': student_list,
-        "date": old_current_dates(group_id),  # Ensure this function is defined and returns the necessary date data
+        "date": old_current_dates(group_id),  # davomat funksiya kunlari
         "scoresData": scores
     })
 

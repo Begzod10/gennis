@@ -377,15 +377,13 @@ def get_user():
     })
 
 
-
-
-
 @app.route(f'{api}/get_group_datas/<int:group_id>')
 @jwt_required()
 def get_group_datas(group_id):
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     students = Students.query.join(Students.group).filter(Groups.id == group_id).all()
+    group = Groups.query.filter(Groups.id == group_id).first()
     users = Users.query.filter(Users.id.in_([user.user.id for user in students])).all()
     # for user in users:
     #     user_id = check_exist_id(user.user_id)
@@ -393,7 +391,8 @@ def get_group_datas(group_id):
     #     db.session.commit()
     return jsonify({
         "users": iterate_models(users),
-        "access_token": access_token
+        "access_token": access_token,
+        "group": group.convert_json()
     })
 
 
