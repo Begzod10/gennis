@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .student {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .student_list {
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .student_list button {
+            margin-top: 40px;
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body>
+<div class="student">
+    <div class="student_list">
+        <table>
+            <tr>
+                <th>Students</th>
+                <th>Listening</th>
+                <th>Reading</th>
+                <th>Writing</th>
+                <th>Speaking</th>
+            </tr>
+            {% for st in students %}
+                <tr>
+                    <td class="student_info" data-id="{{ st.id }}">{{ st.user.name }} {{ st.user.surname }}</td>
+                    <td class="listening"><input type="text"></td>
+                    <td class="reading"><input type="text"></td>
+                    <td class="writing"><input type="text"></td>
+                    <td class="speaking"><input type="text"></td>
+                </tr>
+            {% endfor %}
+        </table>
+        <button data-id="{{ group_id }}">Submit</button>
+    </div>
+</div>
+<script>
+    let student_info = document.querySelectorAll('.student_info'),
+        listening = document.querySelectorAll('.listening input'),
+        reading = document.querySelectorAll('.reading input'),
+        writing = document.querySelectorAll('.writing input'),
+        speaking = document.querySelectorAll('.speaking input'),
+        button = document.querySelector('button'),
+        student_block = [];
+
+    function giveScore(element, type, student_block) {
+        element.forEach((item, index) => {
+            item.addEventListener('input', () => {
+                let info = {
+                    "id": student_info[index].dataset.id,
+                    "info": student_info[index].innerHTML,
+                    "speaking": 0,
+                    "writing": 0,
+                    "reading": 0,
+                    "listening": 0
+                }
+                info[`${type}`] = item.value;
+
+                if (student_block.filter(item => item.id === student_info[index].dataset.id).length === 0) {
+                    student_block.push(info)
+                } else {
+                    student_block.forEach((student, index) => {
+                        if (student.id === student_info[index].dataset.id) {
+                            student[`${type}`] = item.value
+                        }
+
+                    })
+                }
+            })
+        })
+    }
+
+    giveScore(listening, "listening", student_block)
+    giveScore(reading, "reading", student_block)
+    giveScore(writing, "writing", student_block)
+    giveScore(speaking, "speaking", student_block)
+
+    button.addEventListener('click', function () {
+        fetch('/student_time/' + button.dataset.id, {
+            method: "POST",
+            body: JSON.stringify({
+                student_list: student_block
+            }),
+            headers: {
+                "Content-type": "application/json"
+            }
+        })
+    })
+</script>
+</body>
+</html>
