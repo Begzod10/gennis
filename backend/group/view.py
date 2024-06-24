@@ -604,6 +604,7 @@ def student_group_dates2(student_id):
 
     for attendance in attendance_month:
         year = AttendanceHistoryStudent.query.filter(AttendanceHistoryStudent.student_id == student.id,
+
                                                      AttendanceHistoryStudent.calendar_year == attendance.calendar_year).all()
         info = {
             'year': '',

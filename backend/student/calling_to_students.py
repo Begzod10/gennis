@@ -1,19 +1,18 @@
-from app import app, api, request, jsonify, db, contains_eager, extract
-from backend.models.models import Students, StudentCallingInfo, Users, StudentExcuses, DeletedStudents
+from app import app, request, jsonify, db, extract
+from backend.models.models import Students, StudentCallingInfo, Users, StudentExcuses
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.functions.utils import api, find_calendar_date
 from backend.student.functions import get_student_info, get_completed_student_info
 from backend.models.models import Locations
 from backend.lead.models import *
-from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
+from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics
 from backend.models.models import CalendarDay
-import pprint
 from sqlalchemy import asc
-from sqlalchemy.orm import aliased
-from sqlalchemy import func, case, and_, or_
 
 
 # @app.route(f'{api}/new_students_calling', defaults={"location_id": None}, methods=["POST", "GET"])
+
+
 @app.route(f'{api}/new_students_calling/<int:location_id>', methods=["POST", "GET"])
 @jwt_required()
 def new_students_calling(location_id):
@@ -405,7 +404,7 @@ def change_statistics(location_id):
                     db.session.add(add_task_stat)
                     db.session.commit()
 
-    
+
 def update_tasks_in_progress(location_id):
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
