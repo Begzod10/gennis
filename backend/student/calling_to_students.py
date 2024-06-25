@@ -203,6 +203,7 @@ def student_in_debts(number, leng, location_id):
             Students.deleted_from_register == None).first().id
 
         number_new = 20 * number
+
         number_old = number - 1
         number_old *= 20
         id_first = number_old + student_first_id
