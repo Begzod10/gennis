@@ -119,7 +119,9 @@ class Students(db.Model):
             "role": self.user.role_info.type_role,
             "photo_profile": self.user.photo_profile,
             "location_id": self.user.location_id,
+            'subjects': [subject.name for subject in self.subject]
         }
+
 
 class StudentCallingInfo(db.Model):
     __tablename__ = "studentcallinginfo"
