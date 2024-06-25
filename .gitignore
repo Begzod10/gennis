@@ -1,0 +1,6 @@
+frontend
+__pycache__/
+venv
+migrations
+.idea
+.run
