@@ -34,6 +34,8 @@ def img_larger(e):
     })
 
 
+
+
 @app.route('/', methods=['POST', 'GET'])
 def index():
     refreshdatas()
