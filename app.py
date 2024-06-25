@@ -16,7 +16,7 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
 
-classroom_server = "http://192.168.68.104:5001"
+classroom_server = "http://192.168.68.108:5001"
 
 
 # classroom_server = "https://classroom.gennis.uz/"
