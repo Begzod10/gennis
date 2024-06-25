@@ -165,6 +165,28 @@ def new_students_calling(location_id):
         return jsonify({'msg': "Komment belgilandi", "student": {'id': student.id}})
 
 
+@app.route(f'{api}/get_completed_tasks/', defaults={"location_id": None}, methods=["GET"])
+@app.route(f'{api}/get_completed_tasks/<int:location_id>', methods=["GET"])
+@jwt_required()
+def get_completed_tasks(location_id):
+    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                     Users.location_id == location_id
+                                                                     ).filter(
+        Students.deleted_from_register == None).order_by(
+        asc(Users.balance)).all()
+    completed_tasks = []
+    april = datetime.strptime("2024-03", "%Y-%m")
+    for student in students:
+        if student.deleted_from_group:
+            if student.deleted_from_group[-1].day.month.date >= april:
+                if get_completed_student_info(student) != None:
+                    completed_tasks.append(get_completed_student_info(student))
+        else:
+            if get_completed_student_info(student) != None:
+                completed_tasks.append(get_completed_student_info(student))
+    return jsonify({'completed_tasks': completed_tasks})
+
+
 @app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/', defaults={"location_id": None}, methods=["POST", "GET"])
 @app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/<int:location_id>', methods=["POST", "GET"])
 @jwt_required()
@@ -174,7 +196,6 @@ def student_in_debts(number, leng, location_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     april = datetime.strptime("2024-03", "%Y-%m")
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
-    completed_tasks = []
 
     if request.method == "GET":
         student_first_id = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
@@ -209,19 +230,14 @@ def student_in_debts(number, leng, location_id):
                 if student.deleted_from_group[-1].day.month.date >= april:
                     if get_student_info(student) != None:
                         payments_list.append(get_student_info(student))
-                    if get_completed_student_info(student) != None:
-                        completed_tasks.append(get_completed_student_info(student))
             else:
                 if get_student_info(student) != None:
                     payments_list.append(get_student_info(student))
-                if get_completed_student_info(student) != None:
-                    completed_tasks.append(get_completed_student_info(student))
         end = time.time()
-        print(number, leng, len(students))
-        print(f"Run time func: {(end1 - start1) * 10 ** 3:.03f}ms")
-        print(f"Run time: {(end - start) * 10 ** 3:.03f}ms")
-
-        return jsonify({"students": payments_list, 'completed_tasks': completed_tasks})
+        # print(number, leng, len(students))
+        # print(f"Run time func: {(end1 - start1) * 10 ** 3:.03f}ms")
+        # print(f"Run time: {(end - start) * 10 ** 3:.03f}ms")
+        return jsonify({"students": payments_list})
     if request.method == "POST":
         data = request.get_json()
         reason = data.get('comment')

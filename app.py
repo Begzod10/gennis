@@ -93,5 +93,8 @@ from backend.tasks.admin import *
 from backend.tasks.teacher import *
 
 # teacher observation, attendance, teacher_group_statistics
+
 if __name__ == '__main__':
     app.run()
+
+
