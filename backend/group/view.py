@@ -532,13 +532,13 @@ def student_attendances(student_id, group_id, month):
             "dictionary": present.dictionary,
             "activeness": present.activeness,
             "averageBall": present.average_ball,
-            "date": present.day.date.strftime("%d")
+            "date": present.day.date.strftime("%Y.%m.%d")
         }
             for present in student_attendances_present]
 
         absent_list = [{
             "id": present.id,
-            "date": present.day.date.strftime("%d")
+            "date": present.day.date.strftime("%Y.%m.%d")
         } for present in student_attendances_absent]
 
         return jsonify({

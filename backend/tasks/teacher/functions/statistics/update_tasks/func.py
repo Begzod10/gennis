@@ -59,7 +59,6 @@ def update_teacher_tasks(teacher, location_id):
 
     excuses_statistics = TasksStatistics.query.filter_by(calendar_day=calendar_day.id, user_id=teacher.user_id,
                                                          task_id=excuses_task_type.id).first()
-    print(excuses_statistics)
     if excuses_statistics.in_progress_tasks < excuses_task_count:
         excuses_statistics.in_progress_tasks = excuses_task_count
         db.session.commit()
