@@ -127,9 +127,10 @@ def submit_test_group(group_id):
         len_students = 0
         for student in get_json_field('students'):
             student_get = Students.query.filter(Students.user_id == student['id']).first()
-            true_answers = int(student['true_answers']) if "true_answers" in student else 0
+            true_answers = student['true_answers'] if "true_answers" in student else 0
             if true_answers != 0:
                 len_students += 1
+                true_answers = int(true_answers)
                 percentage = round((true_answers / group_test.number_tests) * 100)
                 group_percentage += percentage
                 exist_test = StudentTest.query.filter(StudentTest.student_id == student_get.id,

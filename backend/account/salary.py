@@ -1,3 +1,5 @@
+import datetime
+
 from app import app, db, jsonify, contains_eager, request, desc, or_
 from backend.functions.utils import api, find_calendar_date, get_json_field, update_staff_salary_id, \
     update_teacher_salary_id, update_salary
@@ -257,6 +259,16 @@ def teacher_salary_inside(salary_id, user_id):
 @jwt_required()
 def black_salary(teacher_id):
     teacher = Teachers.query.filter(Teachers.user_id == teacher_id).first()
+    # teacher_get = Teachers.query.filter(Teachers.user_id == 6).first()
+    # print(teacher_get.user.name)
+    # month = datetime.datetime.strptime("2024-04", "%Y-%m")
+    # calendar_month = CalendarMonth.query.filter(CalendarMonth.date == month).first()
+    # black_salaries_teracher = TeacherBlackSalary.query.filter(TeacherBlackSalary.teacher_id == teacher_get.id,
+    #                                                           TeacherBlackSalary.calendar_month == calendar_month.id).all()
+    # print(black_salaries_teracher)
+    # for sal in black_salaries_teracher:
+    #     sal.status = True
+    #     db.session.commit()
     black_salaries = TeacherBlackSalary.query.filter(TeacherBlackSalary.teacher_id == teacher.id,
                                                      ).filter(
         or_(TeacherBlackSalary.status == False, TeacherBlackSalary.status == None)).order_by(
