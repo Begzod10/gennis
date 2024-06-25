@@ -136,24 +136,15 @@ def change_student_info(user_id):
                     "night_shift": night_shift
                 })
                 db.session.commit()
-                for phone in user.phone:
-                    if phone.personal:
-                        del_phone = PhoneList.query.filter(PhoneList.user_id == phone.user_id).first()
-                        db.session.delete(del_phone)
-                        db.session.commit()
 
-                add = PhoneList(phone=json['phone'], user_id=user_id, personal=True)
-                db.session.add(add)
+                del_phone = PhoneList.query.filter(PhoneList.user_id == user.id, PhoneList.personal == True).first()
+                del_phone.phone = json['phone']
                 db.session.commit()
 
-                for phone in user.phone:
-                    if phone.parent:
-                        del_phone = PhoneList.query.filter(PhoneList.user_id == phone.user_id).first()
-                        db.session.delete(del_phone)
-                        db.session.commit()
+                del_phone = PhoneList.query.filter(PhoneList.user_id == user.id).first()
 
-                add = PhoneList(phone=json['parentPhone'], user_id=user_id, parent=True)
-                db.session.add(add)
+                del_phone.phone = json['parentPhone']
+
                 db.session.commit()
 
                 send_user_info(user)
