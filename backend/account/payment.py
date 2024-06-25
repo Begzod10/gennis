@@ -266,7 +266,7 @@ def get_payment(user_id):
         st_functions.update_debt()
         st_functions.update_balance()
         student = Students.query.filter(Students.id == student.id).first()
-        if student.debtor == 0:
+        if student.debtor == 0 or student.user.balance <= -50000:
             black_salaries = TeacherBlackSalary.query.filter(TeacherBlackSalary.student_id == student.id,
                                                              TeacherBlackSalary.status == False).all()
             for salary in black_salaries:

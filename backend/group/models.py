@@ -58,7 +58,8 @@ class Groups(db.Model):
                 "name": self.name,
                 "students": len(self.student),
                 "teacher__id": self.teacher_id,
-                "student_list": []
+                "student_list": [],
+                "level": self.level.name if self.level else None
             }
             for student in self.student:
                 st_info = {
@@ -77,7 +78,8 @@ class Groups(db.Model):
                     "name": self.teacher[0].user.name,
                     "surname": self.teacher[0].user.surname,
                 },
-                "subject": self.subject.name
+                "subject": self.subject.name,
+                "level": self.level.name
             }
         return info
 
@@ -177,6 +179,7 @@ class AttendanceDays(db.Model):
     discount = Column(Boolean, default=False)
     date = Column(DateTime)
     teacher_ball = Column(Integer)
+    calling_status = Column(Boolean, default=False)
 
     def convert_json(self, entire=False):
         if self.status == 1:
