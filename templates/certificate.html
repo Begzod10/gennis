@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .certificate {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        .certificate_panel {
+            height: 100px;
+            background-color: #00c2ff;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            align-self: flex-start;
+            width: 100%;
+        }
+
+        .certificate_panel select {
+        {#height: 50px;#} padding: 5px;
+            border-radius: 10px;
+        }
+
+        .certificate_block {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 400px;
+            overflow: auto;
+            align-items: center;
+        }
+
+        .certificate_block::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .certificate_block::-webkit-scrollbar-track {
+            background-color: #ffffff;
+        }
+
+        .certificate_block::-webkit-scrollbar-thumb {
+            cursor: pointer;
+            background-color: #313131;
+        }
+
+        .certificate_student {
+            width: 70%;
+            display: flex;
+            justify-content: space-around;
+            min-height: 70px;
+            color: #00c2ff;
+            align-items: center;
+        }
+
+        .certificate_student:nth-child(even) {
+            background-color: #00c2ff;
+            color: white;
+        }
+
+        .certificate_ball {
+            width: 50px;
+            height: 50px;
+        }
+
+        .certificate_info {
+            width: 450px;
+        }
+
+        .certificate_ball input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+
+        .certificate_level {
+            display: flex;
+            height: 100px;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .certificate_level select, input, button {
+            padding: 5px;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .certificate_level button {
+            background-color: #00c2ff;
+            color: white;
+            width: 100px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        .certificate_level button:active, .certificate_create:active {
+            transform: scale(0.8);
+        }
+
+        .certificate_create {
+            position: absolute;
+            bottom: 5%;
+            right: 5%;
+            background-color: #00c2ff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .certificate_sort {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 10%;
+            background-color: #00c2ff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .download_link {
+            position: absolute;
+            right: 5%;
+            bottom: 20%;
+            text-decoration: none;
+            background-color: #00c2ff;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<section class="certificate">
+    <div class="certificate_panel">
+        <select name="location" id="location">
+            {#            <option value="choose">Choose location</option>#}
+            {% for location in locations %}
+                <option value="{{ location.id }}">{{ location.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="subject" id="subject">
+            {#            <option value="choose">Choose subject</option>#}
+            {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="teacher" id="teacher">
+            {#            <option value="choose">Choose teacher</option>#}
+        </select>
+        <select name="group" id="group">
+            {#            <option value="choose">Choose Group</option>#}
+        </select>
+    </div>
+    <div class="certificate_level">
+        <input type="date" value="{{ calendar_day.date.strftime("%Y-%m-%d") }}" class="date">
+        <select name="" id="level">
+            {% for level in certificate_levels %}
+                <option value="{{ level.id }}">{{ level.name }}</option>
+            {% endfor %}
+        </select>
+        <div class="certificate_form">
+            <input type="text" name="level" placeholder="enter level">
+            <button>Add level</button>
+        </div>
+    </div>
+    <div class="certificate_block">
+
+    </div>
+    <button class="certificate_create">Create Certificate</button>
+    <a class="download_link" href="">Download All</a>
+    <iframe id="my_iframe" style="display:none;"></iframe>
+</section>
+{#<form action="" enctype="multipart/form-data"></form>#}
+<script>
+    let subject = document.querySelector('#subject'),
+        location_id = document.querySelector('#location'),
+        teacher = document.querySelector('#teacher'),
+        group = document.querySelector('#group'),
+        certificate_block = document.querySelector('.certificate_block'),
+        new_list,
+        certificate_form_button = document.querySelector('.certificate_form button'),
+        certificate_form_input = document.querySelector('.certificate_form input'),
+        certificate_form_select = document.querySelector('.certificate_level select'),
+        certificate_create = document.querySelector('.certificate_create'),
+        certificate_sort = document.querySelector('.certificate_sort'),
+        date = document.querySelector('.date'),
+        download_link = document.querySelector('.download_link');
+    level = document.querySelector('#level');
+
+    certificate_create.addEventListener('click', () => {
+        if (new_list && date.value && level.value) {
+            new_list.sort((a, b) => b.ball - a.ball)
+            fetch('/api/create_certificate', {
+                method: 'POST',
+                body: JSON.stringify({
+                    student_list: new_list,
+                    date: date.value,
+                    level: level.value,
+                    group_id: group.value
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (jsonResponse) {
+
+                    if (jsonResponse) {
+                        download_link.style.display = "initial"
+                        download_link.href = `/api/download_certificates2/${group.value}`
+                        alert("Sertifikatlar yaratildi")
+                    } else {
+                        download_link.style.display = "none"
+                        download_link.href = `#`
+
+                    }
+                })
+        }
+    })
+    certificate_form_button.addEventListener('click', () => {
+        if (certificate_form_input.value) {
+            fetch('/api/add_certificate_level/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    value: certificate_form_input.value,
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (jsonResponse) {
+
+                    certificate_form_select.innerHTML = ''
+                    for (let teach of jsonResponse['levels']) {
+                        certificate_form_select.innerHTML += `<option value="${teach['id']}">${teach['name']}</option>`
+                    }
+                })
+            certificate_form_input.value = ''
+        }
+    })
+
+    function get_teachers(select) {
+        select.addEventListener('change', () => {
+            if (select.value !== "choose") {
+                fetch('/api/get_teachers_by_subject/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        subject_id: subject.value,
+                        location_id: location_id.value
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(function (response) {
+                        return response.json();
+                    })
+                    .then(function (jsonResponse) {
+
+                        teacher.innerHTML = ''
+                        for (let teach of jsonResponse['teachers']) {
+                            teacher.innerHTML += `<option value="${teach['teacher_id']}">${teach['teacher_name']}</option>`
+                        }
+
+                    })
+            }
+        })
+
+    }
+
+    get_teachers(subject)
+    get_teachers(location_id)
+    teacher.addEventListener('click', () => {
+        if (teacher.value !== "choose") {
+            fetch('/api/get_groups_by_teacher/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    teacher_id: teacher.value
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (jsonResponse) {
+                    group.innerHTML = ''
+                    for (let teach of jsonResponse['groups']) {
+                        group.innerHTML += `<option value="${teach['id']}">${teach['name']}</option>`
+                    }
+                })
+        }
+    })
+    group.addEventListener('click', () => {
+        if (group.value !== "choose") {
+            fetch('/api/get_students_by_group/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    group_id: group.value
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (jsonResponse) {
+                    certificate_block.innerHTML = ''
+                    new_list = jsonResponse['students']
+
+                    function spreadStudents(list) {
+                        certificate_block.innerHTML = ''
+                        for (let teach = 0; teach < list.length; teach++) {
+                            certificate_block.innerHTML +=
+                                `<div class="certificate_student">
+                                    <div class="certificate_num">${teach + 1}</div>
+                                    <div class="certificate_info">${list[teach]['name']} ${list[teach]['surname']}</div>
+                                    <div class="certificate_ball"><input type="number" value="${list[teach]['ball']}"></div>
+                                 </div>`
+
+                        }
+                    }
+
+                    spreadStudents(new_list)
+                    let certificate_ball = document.querySelectorAll('.certificate_student input');
+
+                    certificate_ball.forEach((ball, index) => {
+                        ball.addEventListener('input', () => {
+                            new_list[index]['ball'] = +ball.value
+                            console.log(new_list[index])
+                            console.log(ball)
+                            console.log(index)
+                        })
+                    })
+
+                })
+        }
+    })
+</script>
+
+
+{#<script src="../static/js/certificate.js"></script>#}
+</body>
+</html>
