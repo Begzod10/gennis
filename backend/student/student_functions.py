@@ -246,13 +246,18 @@ def get_filtered_students_list(location_id):
 
     for student in students:
         for subject in student.subject:
-            if subject.id not in subjects_with_students:
-                subjects_with_students[subject.id] = {
-                    "id": subject.id,
-                    "name": subject.name,
-                    "students": []
-                }
-            subjects_with_students[subject.id]["students"].append(student.convert_json())
+            wed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4,
+                   5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+                   9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
+                   3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, ]
+            for d in wed:
+                if subject.id not in subjects_with_students:
+                    subjects_with_students[subject.id] = {
+                        "id": subject.id,
+                        "name": subject.name,
+                        "students": []
+                    }
+                subjects_with_students[subject.id]["students"].append(student.convert_json())
     return jsonify(list(subjects_with_students.values()))
 
 
