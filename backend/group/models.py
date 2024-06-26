@@ -79,7 +79,7 @@ class Groups(db.Model):
                     "surname": self.teacher[0].user.surname,
                 },
                 "subject": self.subject.name,
-                "level": self.level.name
+                "level": self.level.name if self.level else None
             }
         return info
 

@@ -9,10 +9,9 @@ from backend.tasks.teacher.functions.statistics.create_tasks.func import change_
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
-@app.route(f'{api}/teacher_tasks_debt2/<int:location_id>', methods=["GET"])
+@app.route(f'{api}/teacher_tasks_debt2/<int:location_id>', methods=["GET", "POST"])
 @jwt_required()
 def teacher_tasks_debt(location_id):
-    print(location_id)
     today = datetime.today()
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     april = datetime.strptime("2024-03", "%Y-%m")
@@ -47,13 +46,15 @@ def teacher_tasks_debt(location_id):
         data = request.get_json()
         reason = data.get('comment')
         select = data.get('select')
-        to_date = data.get('date')
+        to_date = data.get('data')
         user_id = data.get('id')
 
+        print(data)
         if to_date:
             to_date = datetime.strptime(to_date, "%Y-%m-%d")
         next_day = datetime.strptime(f'{today.year}-{today.month}-{int(today.day) + 1}', "%Y-%m-%d")
         student = Students.query.filter(Students.user_id == user_id).first()
+
         new_excuse = StudentExcuses(reason=reason if select == "tel ko'tardi" else "tel ko'tarmadi",
                                     to_date=to_date if select == "tel ko'tardi" else next_day,
                                     added_date=calendar_day.date,

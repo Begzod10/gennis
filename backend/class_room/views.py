@@ -393,6 +393,7 @@ def get_group_datas(group_id):
         "users": iterate_models(users),
         "access_token": access_token,
         "group": group.convert_json()
+
     })
 
 

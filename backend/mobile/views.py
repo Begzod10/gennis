@@ -1453,7 +1453,6 @@ def mobile_group_dates(group_id):
 @jwt_required()
 def mobile_student_attendances(group_id, month):
     user = Users.query.filter_by(user_id=get_jwt_identity()).first()
-    print(user)
     selected_month = datetime.strptime(month, "%Y-%m")
     student = Students.query.filter(Students.user_id == user.id).first()
     time_tables = []
@@ -1466,7 +1465,7 @@ def mobile_student_attendances(group_id, month):
                 },
                 'time': {
                     'day_name': time_table.start_time.strftime("%A"),
-                    'day': time_table.start_time.day,
+                    'day': f'{time_table.start_time.day}.{time_table.start_time.month}.{time_table.start_time.year}',
                     'start': f'{time_table.start_time.hour}:{time_table.start_time.minute}',
                     'end': f'{time_table.end_time.hour}:{time_table.end_time.minute}'
                 }

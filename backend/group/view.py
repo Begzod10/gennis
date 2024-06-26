@@ -534,8 +534,10 @@ def student_attendances(student_id, group_id, month):
             "averageBall": present.average_ball,
             "date": present.day.date.strftime("%Y.%m.%d")
         }
-            for present in student_attendances_present]
 
+            for present in student_attendances_present]
+        for present in student_attendances_present:
+            print(present.day.date.strftime("%Y.%m.%d"))
         absent_list = [{
             "id": present.id,
             "date": present.day.date.strftime("%Y.%m.%d")
