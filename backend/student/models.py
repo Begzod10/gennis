@@ -106,6 +106,22 @@ class Students(db.Model):
     student_tests = relationship("StudentTest", backref="student", order_by="StudentTest.id", lazy="select")
     student_calling_info = relationship("StudentCallingInfo", backref="student", order_by="StudentCallingInfo.id")
 
+    def convert_json(self):
+        return {
+            "id": self.user.id,
+            "name": self.user.name.title(),
+            "surname": self.user.surname.title(),
+            "username": self.user.username,
+            "language": self.user.language.name,
+            "age": self.user.age,
+            "reg_date": self.user.day.date.strftime("%Y-%m-%d"),
+            "comment": self.user.comment,
+            "role": self.user.role_info.type_role,
+            "photo_profile": self.user.photo_profile,
+            "location_id": self.user.location_id,
+            'subjects': [subject.name for subject in self.subject]
+        }
+
 
 class StudentCallingInfo(db.Model):
     __tablename__ = "studentcallinginfo"
