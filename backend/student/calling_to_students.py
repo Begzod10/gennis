@@ -308,10 +308,10 @@ def search_student_in_task(location_id):
     })
 
 
-@app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/', defaults={"location_id": None}, methods=["POST", "GET"])
-@app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/<int:location_id>', methods=["POST", "GET"])
+@app.route(f'{api}/student_in_debts/', defaults={"location_id": None}, methods=["POST", "GET"])
+@app.route(f'{api}/student_in_debts/<int:location_id>', methods=["POST", "GET"])
 @jwt_required()
-def student_in_debts(number, leng, location_id):
+def student_in_debts(location_id):
     today = datetime.today()
     # date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
@@ -319,24 +319,13 @@ def student_in_debts(number, leng, location_id):
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
 
     if request.method == "GET":
-        student_first_id = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                                 Users.location_id == location_id).filter(
-            Students.deleted_from_register == None).first().id
-
-        number_new = 40 * number
-
-        number_old = number - 1
-        number_old *= 40
-        id_first = number_old + student_first_id
-        id_last = student_first_id + number_new
         change_statistics(location_id)
         update_tasks_in_progress(location_id)
         students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
                                                                          Users.location_id == location_id
-                                                                         ).filter(Students.id < id_last,
-                                                                                  Students.id >= id_first,
-                                                                                  Students.deleted_from_register == None).order_by(
-            asc(Users.balance)).all()
+                                                                         ).filter(
+            Students.deleted_from_register == None).order_by(
+            asc(Users.balance)).limit(100).all()
         payments_list = []
         for student in students:
             if student.deleted_from_group:
@@ -346,7 +335,6 @@ def student_in_debts(number, leng, location_id):
             else:
                 if get_student_info(student) != None:
                     payments_list.append(get_student_info(student))
-        print(number, leng, len(payments_list))
         return jsonify({"students": payments_list})
     if request.method == "POST":
         data = request.get_json()
