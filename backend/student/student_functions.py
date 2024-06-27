@@ -180,7 +180,6 @@ def deletedStudents(id):
         students_list = DeletedStudents.query.filter(
             DeletedStudents.student_id.in_([user_id for user_id in user_id])).order_by(
             desc(DeletedStudents.calendar_day)).all()
-
     else:
         students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
                                                      DeletedStudents.reason == reason).order_by(
