@@ -288,7 +288,7 @@ def black_salary(teacher_id):
 def teacher_salary_deleted_inside(salary_id, user_id):
     """
 
-    :param salary_id: TeacherSalary and StaffSalary primary key
+    :param salary_id: TeacherSalary and StaffSalary primary keyg
     :param user_id: User table primary key
     :return: DeletedTeacherSalaries table and DeletedStaffSalaries table data
     """
