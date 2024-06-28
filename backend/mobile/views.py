@@ -1,30 +1,29 @@
-from app import app, or_, api, db, jsonify, contains_eager, request, desc, extract
-from werkzeug.security import generate_password_hash, check_password_hash
-from backend.functions.utils import refresh_age, iterate_models, update_salary
-
-from backend.student.class_model import Student_Functions
-from backend.functions.utils import find_calendar_date, get_json_field
+import os
+from datetime import datetime
 
 from flask_jwt_extended import create_access_token, get_jwt_identity, create_refresh_token, \
     unset_jwt_cookies
-from backend.models.models import PhoneList, Contract_Students
-from backend.models.models import Subjects
-from datetime import datetime
-from backend.models.models import Groups, Students, SubjectLevels, \
-    AttendanceHistoryStudent, Group_Room_Week, Week, Roles, CertificateLinks, LessonPlanStudents
 from flask_jwt_extended import jwt_required
-from backend.group.class_model import Group_Functions
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
-from backend.models.models import LessonPlan, ObservationInfo, ObservationOptions, TeacherObservationDay, \
-    TeacherObservation, CalendarDay
-from pprint import pprint
+from app import app, or_, api, db, jsonify, contains_eager, request, desc, extract
 # from backend.book.utils import handle_get_request, handle_post_request, get_observations_for_year
 from backend.functions.debt_salary_update import staff_salary_update
+from backend.functions.small_info import checkFile, user_photo_folder
+from backend.functions.utils import find_calendar_date, get_json_field
+from backend.functions.utils import refresh_age, iterate_models, update_salary
+from backend.group.class_model import Group_Functions
+from backend.group.models import AttendanceDays, Attendance
+from backend.models.models import Groups, Students, SubjectLevels, \
+    AttendanceHistoryStudent, Group_Room_Week, Week, Roles, CertificateLinks, LessonPlanStudents
+from backend.models.models import LessonPlan, ObservationInfo, ObservationOptions, TeacherObservationDay, \
+    TeacherObservation, CalendarDay
+from backend.models.models import PhoneList, Contract_Students
+from backend.models.models import Subjects
 from backend.models.models import Teachers, TeacherSalary, StaffSalary, Staff, CalendarMonth, Users, CalendarYear, \
     TeacherBlackSalary
-from backend.functions.small_info import checkFile, user_photo_folder
-from werkzeug.utils import secure_filename
-import os
+from backend.student.class_model import Student_Functions
 
 
 @app.route(f"{api}/mobile/refresh", methods=["POST"])
@@ -1374,3 +1373,253 @@ def mobile_change_lesson_plan(plan_id):
         "msg": "Darslik rejasi tuzildi",
         "lesson_plan": lesson_plan_get.convert_json()
     })
+
+
+@app.route(f'{api}/mobile/student_time_table/<int:group_id>', methods=['POST', "GET"])
+@jwt_required()
+def mobile_student_time_table(group_id):
+    user = Users.query.filter_by(user_id=get_jwt_identity()).first()
+    student = Students.query.filter_by(user_id=user.id).first()
+    time_tables = []
+    for time_table in student.time_table:
+        if time_table.group_id == group_id:
+            time_tables.append({
+                'room': {
+                    'id': time_table.room.id,
+                    'name': time_table.room.name
+                },
+                'time': {
+                    'day_name': time_table.start_time.strftime("%A"),
+                    'day': time_table.start_time.day,
+                    'start': f'{time_table.start_time.hour}:{time_table.start_time.minute}',
+                    'end': f'{time_table.end_time.hour}:{time_table.end_time.minute}'
+                }
+            })
+    return jsonify({
+        "time_table": time_tables,
+    })
+
+
+@app.route(f'{api}/mobile/group_dates2/<int:group_id>')
+@jwt_required()
+def mobile_group_dates(group_id):
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    year_list = []
+    month_list = []
+    attendance_month = AttendanceHistoryStudent.query.filter(
+        AttendanceHistoryStudent.group_id == group_id,
+    ).order_by(AttendanceHistoryStudent.id).all()
+
+    for attendance in attendance_month:
+        year = AttendanceHistoryStudent.query.filter(AttendanceHistoryStudent.group_id == group_id,
+                                                     AttendanceHistoryStudent.calendar_year == attendance.calendar_year).all()
+        info = {
+            'year': '',
+            'months': []
+        }
+        if info['year'] != attendance.year.date.strftime("%Y"):
+            info['year'] = attendance.year.date.strftime("%Y")
+        for month in year:
+            if attendance.year.date.strftime("%Y") not in year_list:
+                year_list.append(attendance.year.date.strftime("%Y"))
+            if month.month.date.strftime("%m") not in info['months']:
+                info['months'].append(month.month.date.strftime("%m"))
+                info['months'].sort()
+        month_list.append(info)
+    year_list = list(dict.fromkeys(year_list))
+    filtered_list = []
+    for student in month_list:
+        added_to_existing = False
+        for merged in filtered_list:
+            if merged['year'] == student['year']:
+                added_to_existing = True
+            if added_to_existing:
+                break
+        if not added_to_existing:
+            filtered_list.append(student)
+    return jsonify({
+        "data": {
+            "months": filtered_list,
+            "years": year_list,
+            "current_year": calendar_year.date.strftime("%Y"),
+            "current_month": calendar_month.date.strftime("%m"),
+        }
+    })
+
+
+@app.route(f'{api}/mobile/student_attendances/<int:group_id>/<month>')
+@jwt_required()
+def mobile_student_attendances(group_id, month):
+    user = Users.query.filter_by(user_id=get_jwt_identity()).first()
+    selected_month = datetime.strptime(month, "%Y-%m")
+    student = Students.query.filter(Students.user_id == user.id).first()
+    time_tables = []
+    for time_table in student.time_table:
+        if time_table.group_id == group_id:
+            time_tables.append({
+                'room': {
+                    'id': time_table.room.id,
+                    'name': time_table.room.name
+                },
+                'time': {
+                    'day_name': time_table.start_time.strftime("%A"),
+                    'day': f'{time_table.start_time.day}.{time_table.start_time.month}.{time_table.start_time.year}',
+                    'start': f'{time_table.start_time.hour}:{time_table.start_time.minute}',
+                    'end': f'{time_table.end_time.hour}:{time_table.end_time.minute}'
+                }
+            })
+    attendance_student_history = db.session.query(AttendanceHistoryStudent).join(
+        AttendanceHistoryStudent.month).options(contains_eager(AttendanceHistoryStudent.month)).filter(
+        CalendarMonth.date == selected_month, AttendanceHistoryStudent.student_id == student.id,
+        AttendanceHistoryStudent.group_id == group_id).first()
+
+    attendance = db.session.query(Attendance).join(Attendance.month).options(
+        contains_eager(Attendance.month)).filter(
+        CalendarMonth.date == selected_month, Attendance.group_id == group_id,
+        Attendance.student_id == student.id).first()
+    if attendance:
+        student_attendances_present = db.session.query(AttendanceDays).join(AttendanceDays.attendance).options(
+            contains_eager(AttendanceDays.attendance)).filter(AttendanceDays.student_id == student.id,
+                                                              AttendanceDays.group_id == group_id,
+                                                              Attendance.calendar_month == attendance.calendar_month,
+                                                              Attendance.calendar_year == attendance.calendar_year,
+                                                              ).filter(
+            or_(AttendanceDays.status == 1, AttendanceDays.status == 2)).order_by(
+            AttendanceDays.calendar_day).all()
+        student_attendances_absent = db.session.query(AttendanceDays).join(AttendanceDays.attendance).options(
+            contains_eager(AttendanceDays.attendance)).filter(AttendanceDays.student_id == student.id,
+                                                              AttendanceDays.group_id == group_id,
+                                                              Attendance.calendar_month == attendance.calendar_month,
+                                                              Attendance.calendar_year == attendance.calendar_year,
+                                                              AttendanceDays.status == 0).order_by(
+            AttendanceDays.calendar_day).all()
+
+        present_list = [{
+            "id": present.id,
+            "homework": present.homework,
+            "dictionary": present.dictionary,
+            "activeness": present.activeness,
+            "averageBall": present.average_ball,
+            "date": present.day.date.strftime("%d")
+        }
+            for present in student_attendances_present]
+
+        absent_list = [{
+            "id": present.id,
+            "date": present.day.date.strftime("%d")
+        } for present in student_attendances_absent]
+
+        return jsonify({
+            "data": {
+                "name": student.user.name.title(),
+                "surname": student.user.surname.title(),
+                "present": present_list,
+                "absent": absent_list,
+                "totalBall": attendance_student_history.average_ball,
+                "main_attendance": attendance_student_history.id,
+                "status": False
+
+            },
+            'time_table': time_tables
+
+        })
+    else:
+        return jsonify({
+            "data": {
+                "name": student.user.name.title(),
+                "surname": student.user.surname.title(),
+                "present": [],
+                "absent": [],
+                "totalBall": 0,
+                "main_attendance": 0,
+                "status": 0
+            },
+            'time_table': time_tables
+        })
+
+
+@app.route(f'{api}/mobile/combined_attendances/<int:group_id>', methods=["POST", "GET"])
+@jwt_required()
+def mobile_combined_attendances(group_id):
+    user = Users.query.filter_by(user_id=get_jwt_identity()).first()
+    student = Students.query.filter(Students.user_id == user.id).first()
+    st_functions = Student_Functions(student_id=student.id)
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    year_list = []
+    month_list = []
+    attendance_month = AttendanceHistoryStudent.query.filter(
+        AttendanceHistoryStudent.student_id == student.id,
+    ).order_by(AttendanceHistoryStudent.id).all()
+    time_tables = []
+    for time_table in student.time_table:
+        if time_table.group_id == group_id:
+            time_tables.append({
+                'room': {
+                    'id': time_table.room.id,
+                    'name': time_table.room.name
+                },
+                'time': {
+                    'day_name': time_table.start_time.strftime("%A"),
+                    'day': time_table.start_time.day,
+                    'start': f'{time_table.start_time.hour}:{time_table.start_time.minute}',
+                    'end': f'{time_table.end_time.hour}:{time_table.end_time.minute}'
+                }
+            })
+    for attendance in attendance_month:
+        year = AttendanceHistoryStudent.query.filter(AttendanceHistoryStudent.student_id == student.id,
+                                                     AttendanceHistoryStudent.group_id == group_id,
+                                                     AttendanceHistoryStudent.calendar_year == attendance.calendar_year).all()
+        info = {
+            'year': '',
+            'months': []
+        }
+        if info['year'] != attendance.year.date.strftime("%Y"):
+            info['year'] = attendance.year.date.strftime("%Y")
+        for month in year:
+            if attendance.year.date.strftime("%Y") not in year_list:
+                year_list.append(attendance.year.date.strftime("%Y"))
+            if month.month.date.strftime("%m") not in info['months']:
+                info['months'].append(month.month.date.strftime("%m"))
+                info['months'].sort()
+        month_list.append(info)
+
+    day_dict = {gr['year']: gr for gr in month_list}
+    filtered_list = list(day_dict.values())
+
+    if request.method == "GET":
+        current_month = datetime.now().month
+        if len(str(current_month)) == 1:
+            current_month = "0" + str(current_month)
+        current_year = datetime.now().year
+        return jsonify({
+            "data": st_functions.attendance_filter_student_one(month=current_month, year=current_year,
+                                                               group_id=group_id),
+            'info': info,
+            'time_table': time_tables
+        })
+    else:
+        year = get_json_field('year')
+
+        month = get_json_field('month')
+
+        return jsonify({
+            "data": st_functions.attendance_filter_student(month=month, year=year, group_id=group_id),
+            'info': info,
+            'time_table': time_tables
+        })
+
+
+@app.route(f'{api}/mobile/student_self_attendances/<int:group_id>', methods=["POST", "GET"])
+@jwt_required()
+def student_self_attendances(group_id):
+    user = Users.query.filter_by(user_id=get_jwt_identity()).first()
+    student = Students.query.filter(Students.user_id == user.id).first()
+    st_functions = Student_Functions(student_id=student.id)
+    if request.method == 'POST':
+        year = get_json_field('year')
+        month = get_json_field('month')
+        data = st_functions.student_self_attendances(year, month, group_id)
+        serialized_data = [attendance.to_dict() for attendance in data]
+        return jsonify({
+            'data': serialized_data
+        })
