@@ -7,7 +7,7 @@ from backend.models.models import Locations
 from backend.lead.models import *
 from backend.lead.functions import get_lead_tasks, get_completed_lead_tasks
 from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
-from backend.models.models import CalendarDay
+from backend.models.models import CalendarDay, CalendarMonth
 import pprint
 from sqlalchemy import asc
 from sqlalchemy.orm import aliased
@@ -191,14 +191,14 @@ def get_completed_tasks(location_id):
 @app.route(f'{api}/search_student_in_task/<int:location_id>', methods=["POST"])
 @jwt_required()
 def search_student_in_task(location_id):
+    # like ni ko'rish kerak
+
     data = request.get_json()
-    print(data)
     type = data.get('type')
     status = data.get('status')
     text = data.get('text')
     list = []
     if type == 'debtors' and status == False:
-        print(True)
         april = datetime.strptime("2024-03", "%Y-%m")
         students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
                                                                          or_(Users.name.like('%' + text + '%'),
@@ -217,7 +217,6 @@ def search_student_in_task(location_id):
                     list.append(get_student_info(student))
 
     elif type == 'debtors' and status == True:
-        print(False)
         students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
                                                                          Users.location_id == location_id
                                                                          ).filter(
@@ -273,7 +272,6 @@ def search_student_in_task(location_id):
             }
 
             if student.student_calling_info:
-
                 for calling_info in student.student_calling_info:
                     calling_date = {
                         'id': calling_info.id,
@@ -308,33 +306,32 @@ def search_student_in_task(location_id):
     })
 
 
-@app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/', defaults={"location_id": None}, methods=["POST", "GET"])
-@app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/<int:location_id>', methods=["POST", "GET"])
+@app.route(f'{api}/student_in_debts/', defaults={"location_id": None}, methods=["POST", "GET"])
+@app.route(f'{api}/student_in_debts/<int:location_id>', methods=["POST", "GET"])
 @jwt_required()
-def student_in_debts(number, leng, location_id):
+def student_in_debts(location_id):
     today = datetime.today()
     # date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
-    april = datetime.strptime("2024-03", "%Y-%m")
+    april = datetime.strptime("2024-03-01", "%Y-%m-%d")
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
 
     if request.method == "GET":
-        student_first_id = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                                 Users.location_id == location_id).filter(
-            Students.deleted_from_register == None).first().id
-        number_new = 40 * number
-        number_old = number - 1
-        number_old *= 40
-        id_first = number_old + student_first_id
-        id_last = student_first_id + number_new
-        change_statistics(location_id)
-        update_tasks_in_progress(location_id)
         students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
                                                                          Users.location_id == location_id
-                                                                         ).filter(Students.id < id_last,
-                                                                                  Students.id >= id_first,
-                                                                                  Students.deleted_from_register == None).order_by(
-            asc(Users.balance)).all()
+                                                                         ).filter(
+            Students.deleted_from_register == None).order_by(
+            asc(Users.balance)).limit(100).all()
+
+        students2 = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                          Users.location_id == location_id
+                                                                          ).filter(
+            Students.deleted_from_register == None).join(Students.deleted_from_group).options(
+            contains_eager(Students.deleted_from_group)).join(DeletedStudents.day).options(
+            contains_eager(DeletedStudents.day)).filter(CalendarDay.date >= april).order_by(
+            asc(Users.balance)).limit(100).all()
+
+        print(students2)
         payments_list = []
         for student in students:
             if student.deleted_from_group:
@@ -344,7 +341,6 @@ def student_in_debts(number, leng, location_id):
             else:
                 if get_student_info(student) != None:
                     payments_list.append(get_student_info(student))
-        print(number, leng, len(payments_list))
         return jsonify({"students": payments_list})
     if request.method == "POST":
         data = request.get_json()
@@ -356,7 +352,7 @@ def student_in_debts(number, leng, location_id):
         if to_date:
             to_date = datetime.strptime(to_date, "%Y-%m-%d")
         next_day = datetime.strptime(f'{today.year}-{today.month}-{int(today.day) + 1}', "%Y-%m-%d")
-        student = Students.query.filter(Students.user_id == user_id).first()
+        student = Students.query.filter(Students.id == user_id).first()
         new_excuse = StudentExcuses(reason=reason if select == "tel ko'tardi" else "tel ko'tarmadi",
                                     to_date=to_date if select == "tel ko'tardi" else next_day,
                                     added_date=calendar_day.date,
@@ -374,8 +370,11 @@ def student_in_debts(number, leng, location_id):
             TasksStatistics.calendar_day == calendar_day.id,
             TasksStatistics.location_id == location_id
         ).first()
-        students = Students.query.filter(Students.group != None).join(Students.user).filter(
-            Users.location_id == location_id).all()
+        students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                         Users.location_id == location_id
+                                                                         ).filter(
+            Students.deleted_from_register == None).order_by(
+            asc(Users.balance)).all()
 
         students_excuses = StudentExcuses.query.filter(StudentExcuses.student_id.in_([st_id.id for st_id in students]),
                                                        StudentExcuses.added_date == calendar_day.date).count()

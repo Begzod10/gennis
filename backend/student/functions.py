@@ -41,6 +41,8 @@ def get_student_info(student):
     if student.excuses:
         if student.excuses[-1].to_date != None:
             if student.excuses[-1].to_date <= date_strptime:
+                print(date_strptime, True)
+                print(student.excuses[-1].to_date)
                 for exc in student.excuses:
                     if exc.to_date and exc.added_date:
                         info['history'] = [{'id': exc.id, 'added_date': exc.added_date.strftime("%Y-%m-%d"),
