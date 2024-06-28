@@ -69,6 +69,7 @@ class LessonPlan(db.Model):
     activities = Column(String)
     resources = Column(String)
     date = Column(DateTime)
+    updated_date = Column(DateTime)
     group_id = Column(Integer, ForeignKey('groups.id'))
     teacher_id = Column(Integer, ForeignKey('teachers.id'))
     students = relationship("LessonPlanStudents", backref="lesson_plan", order_by="LessonPlanStudents.id",
@@ -107,7 +108,6 @@ class LessonPlan(db.Model):
         }
         if self.students:
             for student in self.students:
-
                 info['students'].append(student.convert_json())
             pprint.pprint(info['students'])
             if len(self.students) != len(students):

@@ -532,13 +532,15 @@ def student_attendances(student_id, group_id, month):
             "dictionary": present.dictionary,
             "activeness": present.activeness,
             "averageBall": present.average_ball,
-            "date": present.day.date.strftime("%d")
+            "date": present.day.date.strftime("%Y.%m.%d")
         }
-            for present in student_attendances_present]
 
+            for present in student_attendances_present]
+        for present in student_attendances_present:
+            print(present.day.date.strftime("%Y.%m.%d"))
         absent_list = [{
             "id": present.id,
-            "date": present.day.date.strftime("%d")
+            "date": present.day.date.strftime("%Y.%m.%d")
         } for present in student_attendances_absent]
 
         return jsonify({
@@ -604,6 +606,7 @@ def student_group_dates2(student_id):
 
     for attendance in attendance_month:
         year = AttendanceHistoryStudent.query.filter(AttendanceHistoryStudent.student_id == student.id,
+
                                                      AttendanceHistoryStudent.calendar_year == attendance.calendar_year).all()
         info = {
             'year': '',

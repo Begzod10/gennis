@@ -89,6 +89,7 @@ from backend.mobile.views import *
 # tasks
 from backend.tasks.admin import *
 from backend.tasks.teacher import *
+from backend.tasks.teacher.urls import *
 
 # teacher observation, attendance, teacher_group_statistics
 

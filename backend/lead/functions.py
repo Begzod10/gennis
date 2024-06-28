@@ -1,6 +1,6 @@
 from backend.models.models import db, extract
 from backend.functions.utils import desc
-from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics, LeadInfos, Lead
+from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics, LeadInfos, Lead
 from datetime import datetime
 from backend.functions.utils import find_calendar_date
 
