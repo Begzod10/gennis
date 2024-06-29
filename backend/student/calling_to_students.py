@@ -7,8 +7,7 @@ from backend.models.models import Locations
 
 from backend.lead.functions import get_lead_tasks, get_completed_lead_tasks
 
-
-from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics
+from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics, TaskStudents
 from backend.models.models import CalendarDay, Lead, DeletedStudents, desc, contains_eager
 from datetime import datetime
 from sqlalchemy import asc
@@ -316,23 +315,32 @@ def student_in_debts(location_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     april = datetime.strptime("2024-03-01", "%Y-%m-%d")
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
-
+    task_type = Tasks.query.filter(Tasks.name == 'excuses').first()
+    task_statistics = TasksStatistics.query.filter(
+        TasksStatistics.task_id == task_type.id,
+        TasksStatistics.calendar_day == calendar_day.id,
+        TasksStatistics.location_id == location_id
+    ).first()
     if request.method == "GET":
-        students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                         Users.location_id == location_id
-                                                                         ).filter(
-            Students.deleted_from_register == None).order_by(
-            asc(Users.balance)).limit(100).all()
+        task_student = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                 TaskStudents.tasksstatistics_id == task_statistics.id).first()
+        task_students = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                  TaskStudents.tasksstatistics_id == task_statistics.id).all()
+        if task_student:
+            students = Students.query.filter(Students.id.in_([st.student_id for st in task_students]))
+        else:
 
-        students2 = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                          Users.location_id == location_id
-                                                                          ).filter(
-            Students.deleted_from_register == None).join(Students.deleted_from_group).options(
-            contains_eager(Students.deleted_from_group)).join(DeletedStudents.day).options(
-            contains_eager(DeletedStudents.day)).filter(CalendarDay.date >= april).order_by(
-            asc(Users.balance)).limit(100).all()
+            students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                             Users.location_id == location_id
+                                                                             ).filter(
+                Students.deleted_from_register == None).order_by(
+                asc(Users.balance)).limit(100).all()
+        if not task_student:
+            for st in students:
+                add_task_student = TaskStudents(task_id=task_type.id, tasksstatistics_id=task_statistics.id,
+                                                student_id=st.id)
+                add_task_student.add()
 
-        print(students2)
         payments_list = []
         for student in students:
             if student.deleted_from_group:
@@ -360,17 +368,13 @@ def student_in_debts(location_id):
                                     student_id=student.id)
         db.session.add(new_excuse)
         db.session.commit()
-        student_first_id = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                                 Users.location_id == location_id).filter(
-            Students.deleted_from_register == None).first().id
+        task_student = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                 TaskStudents.tasksstatistics_id == task_statistics.id,
+                                                 TaskStudents.student_id == student.id).first()
+        task_student.status = True
+        db.session.commit()
         change_statistics(location_id)
 
-        task_type = Tasks.query.filter(Tasks.name == 'excuses').first()
-        task_statistics = TasksStatistics.query.filter(
-            TasksStatistics.task_id == task_type.id,
-            TasksStatistics.calendar_day == calendar_day.id,
-            TasksStatistics.location_id == location_id
-        ).first()
         students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
                                                                          Users.location_id == location_id
                                                                          ).filter(

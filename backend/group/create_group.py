@@ -911,7 +911,7 @@ def delete_student():
         groupId = int(get_json_field('groupId'))
 
         group = Groups.query.filter(Groups.id == groupId).first()
-        if reason == "boshqa":
+        if reason == "Boshqa":
             reason = get_json_field('otherReason')
             group_reason = GroupReason.query.filter(GroupReason.reason == "Boshqa").first()
         else:
