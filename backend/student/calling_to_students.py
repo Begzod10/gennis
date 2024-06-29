@@ -191,8 +191,6 @@ def get_completed_tasks(location_id):
 @app.route(f'{api}/search_student_in_task/<int:location_id>', methods=["POST"])
 @jwt_required()
 def search_student_in_task(location_id):
-    # like ni ko'rish kerak
-
     data = request.get_json()
     type = data.get('type')
     status = data.get('status')
