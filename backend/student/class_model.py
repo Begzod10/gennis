@@ -1,9 +1,9 @@
-from app import contains_eager, db, desc
-from backend.models.models import CalendarYear, CalendarDay, CalendarMonth, StudentExcuses, AttendanceDays, Attendance, \
-    AttendanceHistoryStudent, Students, Users, StudentCharity, StudentPayments, BookPayments, Groups
 from datetime import datetime
 
+from app import contains_eager, db, desc
 from backend.functions.utils import find_calendar_date
+from backend.models.models import CalendarYear, CalendarDay, CalendarMonth, StudentExcuses, AttendanceDays, Attendance, \
+    AttendanceHistoryStudent, Students, Users, StudentCharity, StudentPayments, BookPayments, Groups
 
 
 class Student_Functions:
@@ -235,3 +235,137 @@ class Student_Functions:
         for charity in student_charities:
             StudentCharity.query.filter(StudentCharity.id == charity.id).delete()
             db.session.commit()
+
+    def attendance_filter_student_one(self, month, year, group_id):
+        date = str(year) + "-" + str(month)
+        year = datetime.strptime(str(year), "%Y")
+        date = datetime.strptime(date, "%Y-%m")
+        calendar_year = CalendarYear.query.filter(CalendarYear.date == year).first()
+        calendar_month = CalendarMonth.query.filter(CalendarMonth.date == date).first()
+        attendances = db.session.query(AttendanceDays).join(AttendanceDays.attendance).options(
+            contains_eager(AttendanceDays.attendance)).filter(Attendance.calendar_month == calendar_month.id,
+                                                              Attendance.calendar_year == calendar_year.id,
+                                                              Attendance.student_id == self.student_id,
+                                                              ).join(
+            AttendanceDays.day).options(
+            contains_eager(AttendanceDays.day)).order_by(CalendarDay.date).all()
+
+        group = Groups.query.filter(Groups.id == group_id).first()
+        student = Students.query.filter(Students.id == self.student_id).first()
+        attendances_list = []
+        mixed_dates = []
+        for_filter = []
+        for att in attendances:
+            mixed_dates.append(att.day.date.strftime("%d"))
+            for_filter.append(att.day.date.strftime("%Y-%m-%d"))
+        sorted_dates = list(dict.fromkeys(mixed_dates))
+        sorted_dates.sort()
+        for_filter = list(dict.fromkeys(for_filter))
+        for_filter.sort()
+
+        student_att = {
+            'name': group.name,
+            'subject': group.subject.name,
+            "group_id": group.id,
+            'absent': [],
+            'present': [],
+            'len_days': 0,
+            'dates': [],
+            "student_id": student.user_id
+        }
+        days = []
+        for date in for_filter:
+            day = datetime.strptime(date, "%Y-%m-%d")
+            day = CalendarDay.query.filter(CalendarDay.date == day).first()
+            attendance = AttendanceDays.query.filter(AttendanceDays.group_id == group.id,
+                                                     AttendanceDays.student_id == student.id,
+                                                     AttendanceDays.calendar_day == day.id).first()
+            day_id = ""
+            status = ""
+            reason = ""
+            if attendance:
+                day_id = attendance.calendar_day
+                if attendance.status == 1 or attendance.status == 2:
+                    status = True
+                else:
+                    status = False
+
+                if attendance.reason:
+                    reason = attendance.reason
+            homework = 0
+            activeness = 0
+            dictionary = 0
+            average_ball = 0
+            if attendance:
+                if attendance.homework:
+                    homework = attendance.homework
+                if attendance.dictionary:
+                    dictionary = attendance.dictionary
+                if attendance.activeness:
+                    activeness = attendance.activeness
+                if attendance.average_ball:
+                    average_ball = attendance.average_ball
+            info = {
+                "day_id": day_id,
+                "day": date,
+                "reason": reason,
+                "status": status,
+                "ball": {}
+            }
+            if attendance:
+                if attendance.dictionary:
+                    info['ball'] = {
+                        "homework": homework,
+                        "activeness": activeness,
+                        "dictionary": dictionary,
+                        "average_ball": average_ball
+                    }
+                else:
+                    info['ball'] = {
+                        "homework": homework,
+                        "activeness": activeness,
+                        "average_ball": average_ball
+                    }
+
+            days.append(info)
+            student_att['dates'] = days
+        attendances_list.append(student_att)
+        filtered_attendances = []
+        for student in attendances_list:
+            added_to_existing = False
+            for merged in filtered_attendances:
+                if merged['group_id'] == student['group_id']:
+                    added_to_existing = True
+                if added_to_existing:
+                    break
+            if not added_to_existing:
+                filtered_attendances.append(student)
+
+        data = {
+            "dates": sorted_dates,
+            "attendances": filtered_attendances,
+        }
+        return data
+
+    def student_self_attendances(self, year, month, group_id):
+        date = str(year) + "-" + str(month)
+        year = datetime.strptime(str(year), "%Y")
+        date = datetime.strptime(date, "%Y-%m")
+        calendar_year = CalendarYear.query.filter(CalendarYear.date == year).first()
+        calendar_month = CalendarMonth.query.filter(CalendarMonth.date == date).first()
+        groups = Groups.query.filter(Groups.id == group_id).first()
+        print(calendar_month.id, calendar_year.id)
+        attendances = db.session.query(AttendanceDays) \
+            .join(AttendanceDays.attendance) \
+            .options(contains_eager(AttendanceDays.attendance)) \
+            .filter(
+            Attendance.calendar_month == calendar_month.id,
+            Attendance.calendar_year == calendar_year.id,
+            Attendance.student_id == self.student_id,
+            Attendance.group_id == groups.id,
+        ) \
+            .join(AttendanceDays.day) \
+            .options(contains_eager(AttendanceDays.day)) \
+            .order_by(CalendarDay.date) \
+            .all()
+        return attendances
