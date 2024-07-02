@@ -353,7 +353,6 @@ def student_in_debts(location_id):
             else:
                 if get_student_info(student) != None:
                     payments_list.append(get_student_info(student))
-        print(len(payments_list))
         return jsonify({"students": payments_list})
     if request.method == "POST":
         data = request.get_json()
