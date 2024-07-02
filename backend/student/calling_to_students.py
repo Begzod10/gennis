@@ -1,20 +1,21 @@
-from app import app, api, request, jsonify, db, contains_eager, extract
-from backend.models.models import Students, StudentCallingInfo, Users, StudentExcuses, DeletedStudents
+from app import app, request, jsonify, db, extract
+from backend.models.models import Students, StudentCallingInfo, Users, StudentExcuses
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.functions.utils import api, find_calendar_date
 from backend.student.functions import get_student_info, get_completed_student_info
 from backend.models.models import Locations
-from backend.lead.models import *
-from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
-from backend.models.models import CalendarDay
-import pprint
+
+from backend.lead.functions import get_lead_tasks, get_completed_lead_tasks
+
+from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics, TaskStudents
+from backend.models.models import CalendarDay, Lead, DeletedStudents, desc, contains_eager
+from datetime import datetime
 from sqlalchemy import asc
 from sqlalchemy.orm import aliased
 from sqlalchemy import func, case, and_, or_
 import time
 
 
-# @app.route(f'{api}/new_students_calling', defaults={"location_id": None}, methods=["POST", "GET"])
 @app.route(f'{api}/new_students_calling/<int:location_id>', methods=["POST", "GET"])
 @jwt_required()
 def new_students_calling(location_id):
@@ -162,7 +163,7 @@ def new_students_calling(location_id):
         tasks_daily_statistics.completed_tasks = call_overall
         tasks_daily_statistics.completed_tasks_percentage = completed_tasks_percentage
         db.session.commit()
-        return jsonify({'msg': "Komment belgilandi", "student": {'id': student.id}})
+        return jsonify({'v  ': "Komment belgilandi", "student": {'id': student.id}})
 
 
 @app.route(f'{api}/get_completed_tasks/', defaults={"location_id": None}, methods=["GET"])
@@ -184,48 +185,166 @@ def get_completed_tasks(location_id):
         else:
             if get_completed_student_info(student) != None:
                 completed_tasks.append(get_completed_student_info(student))
+    print(len(completed_tasks))
     return jsonify({'completed_tasks': completed_tasks})
 
 
-@app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/', defaults={"location_id": None}, methods=["POST", "GET"])
-@app.route(f'{api}/student_in_debts/<int:number>/<int:leng>/<int:location_id>', methods=["POST", "GET"])
+@app.route(f'{api}/search_student_in_task/<int:location_id>', methods=["POST"])
 @jwt_required()
-def student_in_debts(number, leng, location_id):
+def search_student_in_task(location_id):
+    data = request.get_json()
+    type = data.get('type')
+    status = data.get('status')
+    text = data.get('text')
+    list = []
+    if type == 'debtors' and status == False:
+        april = datetime.strptime("2024-03", "%Y-%m")
+        students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                         or_(Users.name.like('%' + text + '%'),
+                                                                             Users.surname.like('%' + text + '%')),
+                                                                         Users.location_id == location_id
+                                                                         ).filter(
+            Students.deleted_from_register == None).order_by(Users.name, Users.surname,
+                                                             asc(Users.balance)).all()
+        for student in students:
+            if student.deleted_from_group:
+                if student.deleted_from_group[-1].day.month.date >= april:
+                    if get_student_info(student) != None:
+                        list.append(get_student_info(student))
+            else:
+                if get_student_info(student) != None:
+                    list.append(get_student_info(student))
+
+    elif type == 'debtors' and status == True:
+
+        students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                         or_(Users.name.like('%' + text + '%'),
+                                                                             Users.surname.like('%' + text + '%')),
+                                                                         Users.location_id == location_id
+                                                                         ).filter(
+            Students.deleted_from_register == None).order_by(
+            asc(Users.balance)).all()
+        april = datetime.strptime("2024-03", "%Y-%m")
+        for student in students:
+            if student.deleted_from_group:
+                if student.deleted_from_group[-1].day.month.date >= april:
+                    if get_completed_student_info(student) != None:
+                        list.append(get_completed_student_info(student))
+            else:
+                if get_completed_student_info(student) != None:
+                    list.append(get_completed_student_info(student))
+    elif type == "lead" and status == False:
+        leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False,
+                                  Lead.name.like('%' + text + '%')).order_by(desc(Lead.id), Lead.name).all()
+        for lead in leads:
+            if get_lead_tasks(lead) != None:
+                list.append(get_lead_tasks(lead))
+    elif type == "lead" and status == True:
+
+        leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False,
+                                  Lead.name.like('%' + text + '%')).order_by(desc(Lead.id, Lead.name)).all()
+        for lead in leads:
+            if get_completed_lead_tasks(lead) != None:
+                list.append(get_completed_lead_tasks(lead))
+    elif type == "newStudents":
+        students = Students.query.filter(Students.group == None).join(Students.user).filter(
+            Users.location_id == location_id, Users.student != None,
+            or_(Users.name.like('%' + text + '%'),
+                Users.surname.like('%' + text + '%')),
+            Students.subject != None,
+            Students.deleted_from_register == None).order_by(Users.name, Users.surname).all()
+        today = datetime.today()
+        date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
+        students_info = []
+        completed_tasks = []
+        for student in students:
+            phone = next((phones.phone for phones in student.user.phone if phones.personal), None)
+            subjects = [subject.name for subject in student.subject]
+            shift = '1-smen' if student.morning_shift else '2-smen' if student.night_shift else 'shift unknown'
+            info = {
+                'id': student.id,
+                'name': student.user.name,
+                'surname': student.user.surname,
+                'phone': phone,
+                'subject': subjects,
+                'registered_date': f'{student.user.year.date.year}-{student.user.month.date.month}-{student.user.day.date.day}',
+                'shift': shift,
+                'history': [],
+                'status': ''
+            }
+
+            if student.student_calling_info:
+                for calling_info in student.student_calling_info:
+                    calling_date = {
+                        'id': calling_info.id,
+                        'comment': calling_info.comment,
+                        'day': f'{calling_info.day.year}-{calling_info.day.month}-{calling_info.day.day}'
+                    }
+                    info['history'].append(calling_date)
+
+                if student.student_calling_info[-1].date <= date_strptime:
+                    if student.student_calling_info[-1].date.month == today.month:
+                        index = int(today.day) - int(student.student_calling_info[-1].date.day)
+                        index = max(0, min(index, 1))
+                    else:
+                        index = 1
+                    info['status'] = ['yellow', 'red'][index]
+                    students_info.append(info)
+                added_date = f'{student.student_calling_info[-1].day.year}-{student.student_calling_info[-1].day.month}-{student.student_calling_info[-1].day.day}'
+                added_date_strptime = datetime.strptime(added_date, "%Y-%m-%d")
+                if added_date_strptime == date_strptime and student.student_calling_info[-1].date > date_strptime:
+                    info['status'] = 'yellow'
+                    completed_tasks.append(info)
+            else:
+                info['status'] = 'red'
+                students_info.append(info)
+
+        if status == False:
+            list = students_info
+        else:
+            list = completed_tasks
+    return jsonify({
+        'students': list
+    })
+
+
+@app.route(f'{api}/student_in_debts/', defaults={"location_id": None}, methods=["POST", "GET"])
+@app.route(f'{api}/student_in_debts/<int:location_id>', methods=["POST", "GET"])
+@jwt_required()
+def student_in_debts(location_id):
     today = datetime.today()
+    change_statistics(location_id)
     # date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     calendar_year, calendar_month, calendar_day = find_calendar_date()
-    april = datetime.strptime("2024-03", "%Y-%m")
+    april = datetime.strptime("2024-03-01", "%Y-%m-%d")
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
-
+    task_type = Tasks.query.filter(Tasks.name == 'excuses').first()
+    task_statistics = TasksStatistics.query.filter(
+        TasksStatistics.task_id == task_type.id,
+        TasksStatistics.calendar_day == calendar_day.id,
+        TasksStatistics.location_id == location_id
+    ).first()
     if request.method == "GET":
-        student_first_id = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                                 Users.location_id == location_id).filter(
-            Students.deleted_from_register == None).first().id
-
-        number_new = 20 * number
-
-        number_old = number - 1
-        number_old *= 20
-        id_first = number_old + student_first_id
-        id_last = student_first_id + number_new
-        start1 = time.time()
-        change_statistics(location_id)
-        update_tasks_in_progress(location_id)
-        end1 = time.time()
-        if leng + 20 > 100:
-            while leng >= 20:
-                leng -= 20
-            limit = 20 - leng
+        task_student = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                 TaskStudents.tasksstatistics_id == task_statistics.id).first()
+        task_students = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                  TaskStudents.tasksstatistics_id == task_statistics.id).all()
+        if task_student:
+            students = Students.query.filter(Students.id.in_([st.student_id for st in task_students]))
         else:
-            limit = 20
-        students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                         Users.location_id == location_id
-                                                                         ).filter(Students.id < id_last,
-                                                                                  Students.id >= id_first,
-                                                                                  Students.deleted_from_register == None).order_by(
-            asc(Users.balance)).limit(limit).all()
+
+            students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                             Users.location_id == location_id
+                                                                             ).filter(
+                Students.deleted_from_register == None).order_by(
+                asc(Users.balance)).limit(100).all()
+        if not task_student:
+            for st in students:
+                add_task_student = TaskStudents(task_id=task_type.id, tasksstatistics_id=task_statistics.id,
+                                                student_id=st.id)
+                add_task_student.add()
+
         payments_list = []
-        start = time.time()
         for student in students:
             if student.deleted_from_group:
                 if student.deleted_from_group[-1].day.month.date >= april:
@@ -234,10 +353,6 @@ def student_in_debts(number, leng, location_id):
             else:
                 if get_student_info(student) != None:
                     payments_list.append(get_student_info(student))
-        end = time.time()
-        # print(number, leng, len(students))
-        # print(f"Run time func: {(end1 - start1) * 10 ** 3:.03f}ms")
-        # print(f"Run time: {(end - start) * 10 ** 3:.03f}ms")
         return jsonify({"students": payments_list})
     if request.method == "POST":
         data = request.get_json()
@@ -249,26 +364,25 @@ def student_in_debts(number, leng, location_id):
         if to_date:
             to_date = datetime.strptime(to_date, "%Y-%m-%d")
         next_day = datetime.strptime(f'{today.year}-{today.month}-{int(today.day) + 1}', "%Y-%m-%d")
-        student = Students.query.filter(Students.user_id == user_id).first()
+        student = Students.query.filter(Students.id == user_id).first()
         new_excuse = StudentExcuses(reason=reason if select == "tel ko'tardi" else "tel ko'tarmadi",
                                     to_date=to_date if select == "tel ko'tardi" else next_day,
                                     added_date=calendar_day.date,
                                     student_id=student.id)
         db.session.add(new_excuse)
         db.session.commit()
-        student_first_id = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
-                                                                                 Users.location_id == location_id).filter(
-            Students.deleted_from_register == None).first().id
+        task_student = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                 TaskStudents.tasksstatistics_id == task_statistics.id,
+                                                 TaskStudents.student_id == student.id).first()
+        task_student.status = True
+        db.session.commit()
         change_statistics(location_id)
 
-        task_type = Tasks.query.filter(Tasks.name == 'excuses').first()
-        task_statistics = TasksStatistics.query.filter(
-            TasksStatistics.task_id == task_type.id,
-            TasksStatistics.calendar_day == calendar_day.id,
-            TasksStatistics.location_id == location_id
-        ).first()
-        students = Students.query.filter(Students.group != None).join(Students.user).filter(
-            Users.location_id == location_id).all()
+        students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                         Users.location_id == location_id
+                                                                         ).filter(
+            Students.deleted_from_register == None).order_by(
+            asc(Users.balance)).all()
 
         students_excuses = StudentExcuses.query.filter(StudentExcuses.student_id.in_([st_id.id for st_id in students]),
                                                        StudentExcuses.added_date == calendar_day.date).count()

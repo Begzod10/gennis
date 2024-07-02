@@ -5,7 +5,7 @@ from backend.models.models import db, Subjects
 from .models import Lead, LeadInfos
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.tasks.models import Tasks, TasksStatistics, TaskDailyStatistics
+from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics
 from backend.student.calling_to_students import change_statistics
 from backend.models.models import Users
 from backend.lead.functions import update_task_statistics, update_posted_tasks, get_lead_tasks, \
