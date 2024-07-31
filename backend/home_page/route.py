@@ -145,7 +145,6 @@ def get_home_info():
     response = requests.get(f"{classroom_server}/api/classroom_subjects", headers={
         'Content-Type': 'application/json'
     })
-
     design = HomeDesign.query.first()
     video = HomeVideo.query.first()
     subjects = Subjects.query.order_by(Subjects.id).all()

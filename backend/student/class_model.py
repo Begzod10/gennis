@@ -1,9 +1,9 @@
-from app import contains_eager, db, desc
-from backend.models.models import CalendarYear, CalendarDay, CalendarMonth, StudentExcuses, AttendanceDays, Attendance, \
-    AttendanceHistoryStudent, Students, Users, StudentCharity, StudentPayments, BookPayments, Groups
 from datetime import datetime
 
+from app import contains_eager, db, desc
 from backend.functions.utils import find_calendar_date
+from backend.models.models import CalendarYear, CalendarDay, CalendarMonth, StudentExcuses, AttendanceDays, Attendance, \
+    AttendanceHistoryStudent, Students, Users, StudentCharity, StudentPayments, BookPayments, Groups
 
 
 class Student_Functions:
@@ -250,7 +250,6 @@ class Student_Functions:
             AttendanceDays.day).options(
             contains_eager(AttendanceDays.day)).order_by(CalendarDay.date).all()
 
-
         group = Groups.query.filter(Groups.id == group_id).first()
         student = Students.query.filter(Students.id == self.student_id).first()
         attendances_list = []
@@ -263,7 +262,6 @@ class Student_Functions:
         sorted_dates.sort()
         for_filter = list(dict.fromkeys(for_filter))
         for_filter.sort()
-
 
         student_att = {
             'name': group.name,
@@ -348,3 +346,26 @@ class Student_Functions:
             "attendances": filtered_attendances,
         }
         return data
+
+    def student_self_attendances(self, year, month, group_id):
+        date = str(year) + "-" + str(month)
+        year = datetime.strptime(str(year), "%Y")
+        date = datetime.strptime(date, "%Y-%m")
+        calendar_year = CalendarYear.query.filter(CalendarYear.date == year).first()
+        calendar_month = CalendarMonth.query.filter(CalendarMonth.date == date).first()
+        groups = Groups.query.filter(Groups.id == group_id).first()
+        print(calendar_month.id, calendar_year.id)
+        attendances = db.session.query(AttendanceDays) \
+            .join(AttendanceDays.attendance) \
+            .options(contains_eager(AttendanceDays.attendance)) \
+            .filter(
+            Attendance.calendar_month == calendar_month.id,
+            Attendance.calendar_year == calendar_year.id,
+            Attendance.student_id == self.student_id,
+            Attendance.group_id == groups.id,
+        ) \
+            .join(AttendanceDays.day) \
+            .options(contains_eager(AttendanceDays.day)) \
+            .order_by(CalendarDay.date) \
+            .all()
+        return attendances

@@ -138,11 +138,20 @@ def change_student_info(user_id):
                 db.session.commit()
 
                 del_phone = PhoneList.query.filter(PhoneList.user_id == user.id, PhoneList.personal == True).first()
+                
+
+                if not del_phone:
+                    del_phone = PhoneList(user_id=user_id, personal=True, phone=json['phone'])
+                    db.session.add(del_phone)
+                    db.session.commit()
                 del_phone.phone = json['phone']
                 db.session.commit()
 
-                del_phone = PhoneList.query.filter(PhoneList.user_id == user.id).first()
-
+                del_phone = PhoneList.query.filter(PhoneList.user_id == user.id, PhoneList.parent == True).first()
+                if not del_phone:
+                    del_phone = PhoneList(user_id=user_id, parent=True, phone=json['parentPhone'])
+                    db.session.add(del_phone)
+                    db.session.commit()
                 del_phone.phone = json['parentPhone']
 
                 db.session.commit()

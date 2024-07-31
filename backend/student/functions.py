@@ -9,7 +9,7 @@ def get_student_info(student):
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     info = {
-        "id": student.user.id,
+        "id": student.id,
         "name": student.user.name.title(),
         "surname": student.user.surname.title(),
         "status": ["green", "yellow", "red"][student.debtor] if student.debtor < 2 else ["green", "yellow", "red"][2],
@@ -57,7 +57,7 @@ def get_completed_student_info(student):
     today = datetime.today()
     date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
     info = {
-        "id": student.user.id,
+        "id": student.id,
         "name": student.user.name.title(),
         "surname": student.user.surname.title(),
         "status": ["green", "yellow", "red"][student.debtor] if student.debtor < 2 else ["green", "yellow", "red"][2],

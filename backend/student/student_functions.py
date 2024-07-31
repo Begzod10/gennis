@@ -1,15 +1,17 @@
-from app import app, api, request, jsonify, db, contains_eager, desc
 import os
+import uuid
+from datetime import datetime
+
+import docx
 from flask_jwt_extended import jwt_required
+from werkzeug.utils import secure_filename
+
+from app import app, api, request, jsonify, db, contains_eager, desc
+from backend.functions.small_info import checkFile, user_contract_folder
+from backend.functions.utils import find_calendar_date, update_week
 from backend.models.models import Students, AttendanceHistoryStudent, DeletedStudents, Users, RegisterDeletedStudents, \
     Contract_Students, BookPayments, StudentPayments, Teachers, Roles, Locations, StudentExcuses, StudentHistoryGroups, \
-    Groups, StudentDebt, PhoneList, or_, StudentDebtComment, Contract_Students_Data, StudentCharity
-from backend.functions.small_info import checkFile, user_contract_folder
-from werkzeug.utils import secure_filename
-from backend.functions.utils import find_calendar_date, update_week, get_json_field
-import docx
-from datetime import datetime
-import uuid
+    Groups, Contract_Students_Data, StudentCharity, GroupReason
 
 
 @app.route(f'{api}/student_history2/<int:user_id>')
@@ -168,19 +170,14 @@ def deletedStudents(id):
         user_id.append(user.id)
     user_id = list(dict.fromkeys(user_id))
 
-    if reason == "Boshqa":
-        students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
-                                                     DeletedStudents.reason != "O'qituvchi yoqmadi",
-                                                     DeletedStudents.reason != "O'quvchi o'qishni eplolmadi",
-                                                     DeletedStudents.reason != "Pul oilaviy sharoit").order_by(
-            desc(DeletedStudents.calendar_day)).all()
-    elif reason == "Hammasi":
+    if reason == "Hammasi":
         students_list = DeletedStudents.query.filter(
             DeletedStudents.student_id.in_([user_id for user_id in user_id])).order_by(
             desc(DeletedStudents.calendar_day)).all()
     else:
+        group_reason = GroupReason.query.filter(GroupReason.id == reason).first()
         students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
-                                                     DeletedStudents.reason == reason).order_by(
+                                                     DeletedStudents.reason_id == group_reason.id).order_by(
             desc(DeletedStudents.calendar_day)).all()
 
     role = Roles.query.filter(Roles.type_role == "student").first()
@@ -220,31 +217,42 @@ def deletedStudents(id):
 @jwt_required()
 def newStudents(location_id):
     update_week(location_id)
-    role = Roles.query.filter(Roles.type_role == "student").first()
-
     students = Students.query.join(Users).filter(Users.location_id == location_id, Users.student != None,
                                                  Students.subject != None,
                                                  Students.deleted_from_register == None).order_by(
         desc(Students.id)).all()
     list_students = [
-        {
-            "id": st.user.id,
-            "name": st.user.name.title(),
-            "surname": st.user.surname.title(),
-            "username": st.user.username,
-            "language": st.user.language.name,
-            "age": st.user.age,
-            "reg_date": st.user.day.date.strftime("%Y-%m-%d"),
-            "comment": st.user.comment,
-            "subjects": [sub.name for sub in st.subject],
-            "role": role.role,
-            "photo_profile": st.user.photo_profile,
-            "location_id": st.user.location_id,
-        } for st in students
+        st.convert_json() for st in students
     ]
     return jsonify({
         "newStudents": list_students
     })
+
+
+@app.route(f'{api}/get_filtered_students_list/<int:location_id>', methods=["GET"])
+@jwt_required()
+def get_filtered_students_list(location_id):
+    students = Students.query.join(Users).filter(Users.location_id == location_id, Users.student != None,
+                                                 Students.subject != None,
+                                                 Students.deleted_from_register == None).order_by(
+        desc(Students.id)).all()
+    subjects_with_students = {}
+
+    for student in students:
+        for subject in student.subject:
+            # wed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4,
+            #        5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+            #        9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
+            #        3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, ]
+            # for d in wed:
+            if subject.id not in subjects_with_students:
+                subjects_with_students[subject.id] = {
+                    "id": subject.id,
+                    "name": subject.name,
+                    "students": []
+                }
+            subjects_with_students[subject.id]["students"].append(student.convert_json())
+    return jsonify(list(subjects_with_students.values()))
 
 
 @app.route(f'{api}/new_del_students/<location_id>')

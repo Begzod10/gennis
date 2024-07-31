@@ -19,10 +19,8 @@ jwt = JWTManager(app)
 
 classroom_server = "http://192.168.68.109:5001"
 
-# <<<<<<< HEAD
-# =======
-# classroom_server = "http://192.168.68.104:5001"
-# >>>>>>> 74a06d8d3e2178c51c77274a964f9493bd47bc76
+
+
 
 
 
@@ -98,8 +96,9 @@ from backend.mobile.views import *
 # tasks
 from backend.tasks.admin import *
 from backend.tasks.teacher import *
-from backend.tasks.teacher.urls import *
 
 # teacher observation, attendance, teacher_group_statistics
+
 if __name__ == '__main__':
+
     app.run()

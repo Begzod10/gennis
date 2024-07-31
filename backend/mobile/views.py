@@ -1,31 +1,29 @@
-from app import app, or_, api, db, jsonify, contains_eager, request, desc, extract
-from werkzeug.security import generate_password_hash, check_password_hash
-from backend.functions.utils import refresh_age, iterate_models, update_salary
-from backend.group.models import AttendanceDays, Attendance
-
-from backend.student.class_model import Student_Functions
-from backend.functions.utils import find_calendar_date, get_json_field
+import os
+from datetime import datetime
 
 from flask_jwt_extended import create_access_token, get_jwt_identity, create_refresh_token, \
     unset_jwt_cookies
-from backend.models.models import PhoneList, Contract_Students
-from backend.models.models import Subjects
-from datetime import datetime
-from backend.models.models import Groups, Students, SubjectLevels, \
-    AttendanceHistoryStudent, Group_Room_Week, Week, Roles, CertificateLinks, LessonPlanStudents
 from flask_jwt_extended import jwt_required
-from backend.group.class_model import Group_Functions
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
-from backend.models.models import LessonPlan, ObservationInfo, ObservationOptions, TeacherObservationDay, \
-    TeacherObservation, CalendarDay
-from pprint import pprint
+from app import app, or_, api, db, jsonify, contains_eager, request, desc, extract
 # from backend.book.utils import handle_get_request, handle_post_request, get_observations_for_year
 from backend.functions.debt_salary_update import staff_salary_update
+from backend.functions.small_info import checkFile, user_photo_folder
+from backend.functions.utils import find_calendar_date, get_json_field
+from backend.functions.utils import refresh_age, iterate_models, update_salary
+from backend.group.class_model import Group_Functions
+from backend.group.models import AttendanceDays, Attendance
+from backend.models.models import Groups, Students, SubjectLevels, \
+    AttendanceHistoryStudent, Group_Room_Week, Week, Roles, CertificateLinks, LessonPlanStudents
+from backend.models.models import LessonPlan, ObservationInfo, ObservationOptions, TeacherObservationDay, \
+    TeacherObservation, CalendarDay
+from backend.models.models import PhoneList, Contract_Students
+from backend.models.models import Subjects
 from backend.models.models import Teachers, TeacherSalary, StaffSalary, Staff, CalendarMonth, Users, CalendarYear, \
     TeacherBlackSalary
-from backend.functions.small_info import checkFile, user_photo_folder
-from werkzeug.utils import secure_filename
-import os
+from backend.student.class_model import Student_Functions
 
 
 @app.route(f"{api}/mobile/refresh", methods=["POST"])
@@ -1569,7 +1567,7 @@ def mobile_combined_attendances(group_id):
             })
     for attendance in attendance_month:
         year = AttendanceHistoryStudent.query.filter(AttendanceHistoryStudent.student_id == student.id,
-                                                    AttendanceHistoryStudent.group_id == group_id,
+                                                     AttendanceHistoryStudent.group_id == group_id,
                                                      AttendanceHistoryStudent.calendar_year == attendance.calendar_year).all()
         info = {
             'year': '',
@@ -1609,3 +1607,26 @@ def mobile_combined_attendances(group_id):
             'info': info,
             'time_table': time_tables
         })
+
+
+@app.route(f'{api}/mobile/student_self_attendances/<int:group_id>', methods=["POST", "GET"])
+@jwt_required()
+def student_self_attendances(group_id):
+    user = Users.query.filter_by(user_id=get_jwt_identity()).first()
+    student = Students.query.filter(Students.user_id == user.id).first()
+    st_functions = Student_Functions(student_id=student.id)
+    if request.method == 'POST':
+        year = get_json_field('year')
+        month = get_json_field('month')
+        data = st_functions.student_self_attendances(year, month, group_id)
+        serialized_data = [attendance.to_dict() for attendance in data]
+    else:
+        current_month = datetime.now().month
+        if len(str(current_month)) == 1:
+            current_month = "0" + str(current_month)
+        current_year = datetime.now().year
+        data = st_functions.student_self_attendances(current_year, current_month, group_id)
+        serialized_data = [attendance.to_dict() for attendance in data]
+    return jsonify({
+        'data': serialized_data
+    })
