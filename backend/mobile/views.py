@@ -1630,6 +1630,13 @@ def student_self_attendances(group_id):
         month = get_json_field('month')
         data = st_functions.student_self_attendances(year, month, group_id)
         serialized_data = [attendance.to_dict() for attendance in data]
-        return jsonify({
-            'data': serialized_data
-        })
+    else:
+        current_month = datetime.now().month
+        if len(str(current_month)) == 1:
+            current_month = "0" + str(current_month)
+        current_year = datetime.now().year
+        data = st_functions.student_self_attendances(current_year, current_month, group_id)
+        serialized_data = [attendance.to_dict() for attendance in data]
+    return jsonify({
+        'data': serialized_data
+    })

@@ -11,7 +11,7 @@ from backend.functions.small_info import checkFile, user_contract_folder
 from backend.functions.utils import find_calendar_date, update_week
 from backend.models.models import Students, AttendanceHistoryStudent, DeletedStudents, Users, RegisterDeletedStudents, \
     Contract_Students, BookPayments, StudentPayments, Teachers, Roles, Locations, StudentExcuses, StudentHistoryGroups, \
-    Groups, Contract_Students_Data, StudentCharity
+    Groups, Contract_Students_Data, StudentCharity, GroupReason
 
 
 @app.route(f'{api}/student_history2/<int:user_id>')
@@ -170,19 +170,14 @@ def deletedStudents(id):
         user_id.append(user.id)
     user_id = list(dict.fromkeys(user_id))
 
-    if reason == "Boshqa":
-        students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
-                                                     DeletedStudents.reason != "O'qituvchi yoqmadi",
-                                                     DeletedStudents.reason != "O'quvchi o'qishni eplolmadi",
-                                                     DeletedStudents.reason != "Pul oilaviy sharoit").order_by(
-            desc(DeletedStudents.calendar_day)).all()
-    elif reason == "Hammasi":
+    if reason == "Hammasi":
         students_list = DeletedStudents.query.filter(
             DeletedStudents.student_id.in_([user_id for user_id in user_id])).order_by(
             desc(DeletedStudents.calendar_day)).all()
     else:
+        group_reason = GroupReason.query.filter(GroupReason.id == reason).first()
         students_list = DeletedStudents.query.filter(DeletedStudents.student_id.in_([user_id for user_id in user_id]),
-                                                     DeletedStudents.reason == reason).order_by(
+                                                     DeletedStudents.reason_id == group_reason.id).order_by(
             desc(DeletedStudents.calendar_day)).all()
 
     role = Roles.query.filter(Roles.type_role == "student").first()
@@ -245,6 +240,11 @@ def get_filtered_students_list(location_id):
 
     for student in students:
         for subject in student.subject:
+            # wed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4,
+            #        5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+            #        9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
+            #        3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, ]
+            # for d in wed:
             if subject.id not in subjects_with_students:
                 subjects_with_students[subject.id] = {
                     "id": subject.id,
