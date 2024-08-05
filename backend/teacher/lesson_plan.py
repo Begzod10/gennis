@@ -25,7 +25,6 @@ def change_lesson_plan(plan_id):
     lesson_plan_get.main_lesson = main_lesson
     lesson_plan_get.activities = activities
     lesson_plan_get.resources = resources
-
     db.session.commit()
     for student in student_id_list:
         info = {

@@ -668,7 +668,6 @@ def old_current_dates(group_id=0, observation=False):
 
 
 def update_lesson_plan(group_id):
-    print(group_id)
     time_table_group = Group_Room_Week.query.filter(Group_Room_Week.group_id == group_id).order_by(
         Group_Room_Week.id).all()
     week_list = []
@@ -684,7 +683,6 @@ def update_lesson_plan(group_id):
     group = Groups.query.filter(Groups.id == group_id).first()
     current_day2 = datetime.now().day
     current_day2 += 5
-    print(plan_days)
     for day in plan_days:
         if current_day2 >= day:
             date_get = str(current_year) + "-" + str(current_month) + "-" + str(day)
