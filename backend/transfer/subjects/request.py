@@ -14,7 +14,7 @@ def transfer_subjects():
             }
             url = 'http://localhost:8000/Subjects/subject/'
             x = requests.post(url, json=info)
-            print(x.status_code)
+            print(x.text)
         return True
 
 
@@ -24,17 +24,14 @@ def transfer_subject_levels(token):
         subjects_url = 'http://localhost:8000/Subjects/subject/'
         y = requests.get(url=subjects_url, headers={'Authorization': f"JWT {token}"})
         for subject in y.json()['subjects']:
-            print(subject)
             for subject_level in subject_levels:
-                if subject_level.subject_id == subject['old_id']:
+                if subject_level.subject_id == subject.get('old_id'):
                     info = {
                         'old_id': subject_level.id,
                         'name': subject_level.name,
-                        'subject_id': subject.id
+                        'subject': subject.get('id')
                     }
-                    print(info)
                     url = 'http://localhost:8000/Subjects/subject_level_create/'
-                    # x = requests.post(url, json=info)
-                    # print(x.status_code)
-                    # request += f'{x.status_code} '
-            return True
+                    x = requests.post(url, json=info)
+                    print(x.text)
+        return True
