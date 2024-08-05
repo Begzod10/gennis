@@ -8,7 +8,7 @@ from backend.models.models import Locations
 
 def transfer_location():
     with app.app_context():
-        request = 'transfer_course_types:'
+        request = 'location:'
         locations = Locations.query.order_by(Locations.id).all()
         for location in locations:
             info = {
