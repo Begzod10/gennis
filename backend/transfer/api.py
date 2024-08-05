@@ -2,5 +2,5 @@ from backend.transfer.branch_location.reuqest import transfer_location, transfer
 from login.request import login
 
 login = login()
-# transfer_location()
+transfer_location()
 transfer_branch(login)
