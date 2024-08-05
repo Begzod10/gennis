@@ -25,11 +25,15 @@ def transfer_location():
 
 
 def transfer_branch(token):
-    url = "http://localhost:8000/Location/location_list/"
-    headers = {
-        'Accept': 'application/json',
-        'Authorization': f"JWT {token}"
-    }
-    print(headers)
-    response = requests.request("GET", url, headers=headers)
-    print(response.text)
+    with app.app_context():
+        url = "http://localhost:8000/Location/location_list/"
+        headers = {
+            'Accept': 'application/json',
+            'Authorization': f"JWT {token}"
+        }
+
+        response = requests.request("GET", url, headers=headers).json()
+
+        for location in response['locations']:
+            location = Locations.query.filter(Locations.id == location.get('old_id')).first()
+            print(location)
