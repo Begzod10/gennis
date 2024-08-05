@@ -9,11 +9,6 @@ def transfer_location():
         request = 'transfer_course_types:'
         locations = Locations.query.order_by(Locations.id).all()
         for location in locations:
-            numer = 0
-            if not location.number_location:
-                numer = 1
-            else:
-                numer = location.number_location
             info = {
                 "name": location.name,
                 "number": location.number_location,
@@ -27,3 +22,13 @@ def transfer_location():
             print(x.status_code)
             request += f' {x.status_code}'
         return request
+
+
+def transfer_branch(token):
+    url = "http://localhost:8000/Location/location_list/"
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': f"JWT {token}"
+    }
+    response = requests.request("GET", url, headers=headers)
+    print(response.text)
