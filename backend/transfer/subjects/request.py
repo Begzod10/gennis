@@ -2,6 +2,7 @@ from backend.models.models import Subjects, SubjectLevels
 import requests
 from backend.transfer.api import token
 
+
 def transfer_subjects():
     request = 'transfer_subjects: '
     subjects = Subjects.query.order_by(Subjects.id).all()
@@ -24,7 +25,7 @@ def transfer_subject_levels():
     for subject_level in subject_levels:
         subject_id = 0
         subjects_url = 'http://localhost:8000/Subjects/subject/'
-        y = requests.get(subjects_url)
+        y = requests.get(url=subjects_url, headers={'Authorization': token})
         print(y.text)
         info = {
             'old_id': subject_level.id,
