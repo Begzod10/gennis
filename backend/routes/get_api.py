@@ -7,6 +7,14 @@ from datetime import datetime, timedelta, timezone
 from flask_jwt_extended import jwt_required
 import requests
 from backend.student.class_model import Student_Functions
+from backend.models.models import Locations
+
+@app.route('/send-data', methods=['GET'])
+def send_data():
+    data = {'name': 'genesis', 'number': '12345'}
+
+    response = requests.post('http://127.0.0.1:8000/System/systems/create/', json=data)
+    return f'Data sent! Response: {response.text}'
 
 
 @app.route(f'{api}/get_api')
