@@ -4,6 +4,7 @@
 # from backend.transfer.branch_location.reuqest import transfer_location, transfer_branch
 # from backend.transfer.language.request import transfer_language
 # from backend.transfer.user.request import transfer_users
+from backend.transfer.job.request import transfer_job
 
 from login.request import login
 
@@ -17,3 +18,4 @@ login = login()
 # transfer_branch(login)
 # transfer_language()
 # transfer_users(login)
+transfer_job()
