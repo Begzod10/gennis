@@ -26,6 +26,16 @@ from backend.models.models import Teachers, TeacherSalary, StaffSalary, Staff, C
 from backend.student.class_model import Student_Functions
 
 
+@app.route('/test', methods=['GET','POST'])
+def test():
+    print(True)
+    print(request.get_json())
+    return jsonify({
+        "success": True,
+        "msg": "Working"
+    })
+
+
 @app.route(f"{api}/mobile/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def mobile_refresh():

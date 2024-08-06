@@ -27,6 +27,8 @@ classroom_server = "http://192.168.68.109:5001"
 # classroom_server = "https://classroom.gennis.uz/"
 telegram_bot_server = "http://127.0.0.1:5000"
 
+
+
 # filters
 from backend.functions.filters import *
 
@@ -100,5 +102,4 @@ from backend.tasks.teacher import *
 # teacher observation, attendance, teacher_group_statistics
 
 if __name__ == '__main__':
-
     app.run()
