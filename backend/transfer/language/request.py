@@ -11,7 +11,6 @@ def transfer_language():
         for language in languages:
             info = {
                 "name": language.name,
-
                 "old_id": language.id
             }
             url = 'http://localhost:8000/Language/language/'

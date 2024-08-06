@@ -35,7 +35,6 @@ def transfer_branch(token):
         }
 
         response = requests.request("GET", url, headers=headers).json()
-
         for location in response['locations']:
             location_base = Locations.query.filter(Locations.id == location.get('old_id')).first()
             url = "http://localhost:8000/Branch/branch_create/"
