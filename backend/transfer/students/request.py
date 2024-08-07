@@ -7,9 +7,6 @@ def transfer_students():
     with app.app_context():
         students = Students.query.order_by(Students.id).all()
         for student in students:
-            subjects = []
-            for subject in student.subject:
-                subjects.append(subject.id)
             phone = 0
             for number in student.user.phone:
                 if phone and phone.parent == True:
@@ -20,8 +17,9 @@ def transfer_students():
             if student.night_shift == True:
                 shift = 2
             info = {
+                'old_id_filter': student.user_id,
                 "user": student.user_id,
-                "subject": subjects,
+                "subject": [subject.id for subject in student.subject],
                 "parents_number": phone,
                 "shift": shift,
                 "representative_name": student.representative_name,
@@ -34,6 +32,4 @@ def transfer_students():
             url = 'http://localhost:8000/Transfer/students/students_create/'
             x = requests.post(url, json=info)
             print(x.text)
-            break
-            pass
         return True
