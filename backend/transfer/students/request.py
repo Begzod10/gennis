@@ -1,9 +1,9 @@
-from backend.models.models import Users
+from backend.student.models import Students
 import requests
 from app import app
 
 
-def transfer_users(token):
+def transfer_students(token):
     with app.app_context():
         url = "http://localhost:8000/Language/language/"
         headers = {
@@ -21,8 +21,8 @@ def transfer_users(token):
         branches = requests.request("GET", url, headers=headers).json()
         for language in languages['languages']:
             for branch in branches['branches']:
-                users = Users.query.order_by(Users.id).all()
-                for user in users:
+                students = Students.query.order_by(Students.id).all()
+                for user in students:
                     if user.education_language == language['old_id'] and user.location_id == branch['old_id']:
                         phone = 0
                         for number in user.phone:
