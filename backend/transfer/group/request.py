@@ -24,7 +24,19 @@ def transfer_group():
             info = {
                 'old_id': group.id,
                 'name': group.name,
-                'language': group.language.id,
+                'language': group.education_language,
+                'level': group.level_id,
+                'subject': group.subject_id,
+                'teacher': [group.teacher_id],
+                'students': [student.id for student in group.student],
+                'course_type': group.course_type_id,
+                'branch': group.location_id,
+                'system': 1,
+                'teacher_salary': group.teacher_salary,
+                'attendance_days': group.attendance_days,
+                'price': group.price,
+                'deleted': group.deleted,
+                'status': group.status
             }
             url = 'http://localhost:8000/Transfer/groups/create/'
             x = requests.post(url, json=info)
