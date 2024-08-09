@@ -1,5 +1,8 @@
 from app import app, request, db, jsonify
 from datetime import datetime
+
+from backend.functions.filters import update_lesson_plan
+from backend.group.models import Groups
 from backend.models.models import Users, Students, Teachers, StudentExcuses
 from backend.student.functions import get_student_info, get_completed_student_info
 from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics
@@ -9,26 +12,40 @@ from backend.tasks.teacher.functions.statistics.create_tasks.func import change_
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
+def add_tasks():
+    tasks = ['excuses', 'lesson_plan', 'attendance']
+    for task in tasks:
+        filtered_task = Tasks.query.filter(Tasks.name == task, Tasks.role == 'teacher').first()
+        if not filtered_task:
+            add = Tasks(name=task, role='teacher')
+            db.session.add(add)
+            db.session.commit()
+
+
 @app.route(f'{api}/teacher_tasks_debt2/<int:location_id>', methods=["GET", "POST"])
 @jwt_required()
 def teacher_tasks_debt(location_id):
+    add_tasks()
     today = datetime.today()
     calendar_year, calendar_month, calendar_day = find_calendar_date()
     april = datetime.strptime("2024-03", "%Y-%m")
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
     teacher = Teachers.query.filter(Teachers.user_id == user.id).first()
-    change_teacher_tasks(teacher, location_id)
-    update_teacher_tasks(teacher, location_id)
+
     student_ids = []
     for group in teacher.group:
+        update_lesson_plan(group.id)
         for student in group.student:
             student_ids.append(student.id)
-    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0
+    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0,
+                                                                     Users.location_id == location_id
                                                                      ).filter(
         Students.deleted_from_register == None, Students.id.in_(student_ids)).all()
     completed_tasks = []
     payments_list = []
     if request.method == "GET":
+        change_teacher_tasks(teacher, location_id)
+        update_teacher_tasks(teacher, location_id)
         for student in students:
             if student.deleted_from_group:
                 if student.deleted_from_group[-1].day.month.date >= april:
@@ -49,7 +66,6 @@ def teacher_tasks_debt(location_id):
         to_date = data.get('data')
         user_id = data.get('id')
 
-        print(data)
         if to_date:
             to_date = datetime.strptime(to_date, "%Y-%m-%d")
         next_day = datetime.strptime(f'{today.year}-{today.month}-{int(today.day) + 1}', "%Y-%m-%d")
@@ -61,19 +77,19 @@ def teacher_tasks_debt(location_id):
                                     student_id=student.id)
         db.session.add(new_excuse)
         db.session.commit()
-        change_teacher_tasks(teacher, location_id)
 
         task_type = Tasks.query.filter(Tasks.name == 'excuses', Tasks.role == 'teacher').first()
         task_statistics = TasksStatistics.query.filter(
             TasksStatistics.task_id == task_type.id,
+            TasksStatistics.user_id == user.id,
             TasksStatistics.calendar_day == calendar_day.id,
             TasksStatistics.location_id == location_id
         ).first()
-
+        print(task_type.id, user.id, calendar_day.id, location_id)
         students_excuses = StudentExcuses.query.filter(StudentExcuses.student_id.in_(student_ids),
                                                        StudentExcuses.added_date == calendar_day.date).count()
 
-        task_statistics.completed_tasks = students_excuses
+        task_statistics.completed_tasks += 1
         db.session.commit()
 
         task_statistics.completed_tasks_percentage = (

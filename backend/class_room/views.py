@@ -127,7 +127,7 @@ def attendance_classroom(group_id):
     gr_functions = Group_Functions(group_id=group_id)
     gr_functions.update_list_balance()
     return jsonify({
-        "date": old_current_dates(group_id),
+        "date": old_current_dates(group_id, observation=True),
         "users": attendance_info
     })
 

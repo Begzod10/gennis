@@ -12,12 +12,10 @@
 # from backend.transfer.user.request import transfer_users
 # from backend.transfer.students.request import transfer_students
 from login.request import login
-
+from group.request import transfer_group
 login = login()
-# transfer_course_types()
-# transfer_payment_types()
-# transfer_subjects()
-# transfer_subject_levels()
+
+transfer_group()
 # transfer_location()
 # transfer_branch(login)
 # transfer_language()

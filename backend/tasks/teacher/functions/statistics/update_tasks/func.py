@@ -25,7 +25,7 @@ def update_teacher_tasks(teacher, location_id):
             student_ids.append(student.id)
 
     excuses_task_count = 0
-    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0
+    students = db.session.query(Students).join(Students.user).filter(Users.balance < 0, Users.location_id == location_id
                                                                      ).filter(
         Students.deleted_from_register == None, Students.id.in_(student_ids)).all()
 
@@ -55,47 +55,54 @@ def update_teacher_tasks(teacher, location_id):
     for task in attendance_tasks:
         if not task in unique_tasks:
             unique_tasks.append(task)
-    lesson_plan = LessonPlan.query.filter(LessonPlan.date > date_strptime, LessonPlan.teacher_id == teacher.id).count()
-
+    lesson_plan_count = 0
+    lesson_plan = LessonPlan.query.filter(LessonPlan.date > date_strptime, LessonPlan.teacher_id == teacher.id).all()
+    for lp in lesson_plan:
+        if lp.group.location_id == location_id:
+            lesson_plan_count += 1
     excuses_statistics = TasksStatistics.query.filter_by(calendar_day=calendar_day.id, user_id=teacher.user_id,
-                                                         task_id=excuses_task_type.id).first()
+                                                         task_id=excuses_task_type.id, location_id=location_id).first()
     if excuses_statistics.in_progress_tasks < excuses_task_count:
         excuses_statistics.in_progress_tasks = excuses_task_count
         db.session.commit()
         excuses_statistics.completed_tasks_percentage = (
                                                                 excuses_statistics.completed_tasks
-                                                                / excuses_statistics.in_progress_tasks) * 100
+                                                                / excuses_statistics.in_progress_tasks) * 100 if excuses_statistics.completed_tasks != 0 else 0
         db.session.commit()
 
-    attendance_statistics = TasksStatistics.query.filter_by(calendar_day=calendar_day.id, user_id=teacher.user_id,
-                                                            task_id=attendance_task_type.id).first()
-
-    if attendance_statistics.in_progress_tasks < len(unique_tasks):
-        attendance_statistics.in_progress_tasks = len(unique_tasks)
-        db.session.commit()
-        attendance_statistics.completed_tasks_percentage = (
-                                                                   attendance_statistics.completed_tasks
-                                                                   / attendance_statistics.in_progress_tasks) * 100
-        db.session.commit()
+    # attendance_statistics = TasksStatistics.query.filter_by(calendar_day=calendar_day.id, user_id=teacher.user_id,
+    #                                                         task_id=attendance_task_type.id,
+    #                                                         location_id=location_id).first()
+    #
+    # if attendance_statistics.in_progress_tasks < len(unique_tasks):
+    #     attendance_statistics.in_progress_tasks = len(unique_tasks)
+    #     db.session.commit()
+    #     attendance_statistics.completed_tasks_percentage = (
+    #                                                                attendance_statistics.completed_tasks
+    #                                                                / attendance_statistics.in_progress_tasks) * 100 if  attendance_statistics.completed_tasks != 0 else 0
+    #     db.session.commit()
 
     lesson_plan_statistics = TasksStatistics.query.filter_by(calendar_day=calendar_day.id, user_id=teacher.user_id,
-                                                             task_id=lesson_plan_task_type.id).first()
+                                                             task_id=lesson_plan_task_type.id,
+                                                             location_id=location_id).first()
 
-    if lesson_plan_statistics.in_progress_tasks < lesson_plan:
-        lesson_plan_statistics.in_progress_tasks = lesson_plan
+    if lesson_plan_statistics.in_progress_tasks < lesson_plan_count:
+        lesson_plan_statistics.in_progress_tasks = lesson_plan_count
         db.session.commit()
         lesson_plan_statistics.completed_tasks_percentage = (
                                                                     lesson_plan_statistics.completed_tasks
-                                                                    / lesson_plan_statistics.in_progress_tasks) * 100
+                                                                    / lesson_plan_statistics.in_progress_tasks) * 100 if lesson_plan_statistics.completed_tasks != 0 else 0
         db.session.commit()
 
     task_daily_statistics = TaskDailyStatistics.query.filter_by(user_id=teacher.user_id, calendar_day=calendar_day.id,
                                                                 location_id=location_id).first()
+    # task_daily_statistics.in_progress_tasks = excuses_statistics.in_progress_tasks + \
+    #                                           attendance_statistics.in_progress_tasks + \
+    #                                           lesson_plan_statistics.in_progress_tasks
     task_daily_statistics.in_progress_tasks = excuses_statistics.in_progress_tasks + \
-                                              attendance_statistics.in_progress_tasks + \
                                               lesson_plan_statistics.in_progress_tasks
     db.session.commit()
     task_daily_statistics.completed_tasks_percentage = (
                                                                task_daily_statistics.completed_tasks /
-                                                               task_daily_statistics.in_progress_tasks) * 100
+                                                               task_daily_statistics.in_progress_tasks) * 100 if task_daily_statistics.completed_tasks != 0 else 0
     db.session.commit()
