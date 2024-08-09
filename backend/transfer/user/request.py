@@ -26,7 +26,8 @@ def transfer_users(token):
                     if user.education_language == language['old_id'] and user.location_id == branch['old_id']:
                         phone = 0
                         for number in user.phone:
-                            phone = number.phone
+                            if number.personal != None and number.personal == True:
+                                phone = number.phone
                         info = {
                             'old_id': user.id,
                             "name": user.name,
