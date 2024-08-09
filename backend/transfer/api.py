@@ -10,7 +10,7 @@
 # from language.request import transfer_language
 # from backend.transfer.teachers.request import transfer_teacher
 # from backend.transfer.user.request import transfer_users
-from backend.transfer.students.request import transfer_students
+# from backend.transfer.students.request import transfer_students
 from login.request import login
 
 login = login()
@@ -31,4 +31,4 @@ login = login()
 # transfer_job()
 # transfer_users(login)
 # transfer_teacher()
-transfer_students()
+# transfer_students()
