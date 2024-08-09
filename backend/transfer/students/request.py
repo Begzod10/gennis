@@ -5,7 +5,7 @@ from app import app
 
 def transfer_students():
     with app.app_context():
-        students = Students.query.order_by(Students.id).all()
+        students = Students.query.filter(Students.id >= 7402).order_by(Students.id).all()
         for student in students:
             phone = 0
             for number in student.user.phone:
@@ -28,8 +28,6 @@ def transfer_students():
                 "extra_payment": student.extra_payment,
                 "old_money": student.user.balance
             }
-            print(info)
             url = 'http://localhost:8000/Transfer/students/students_create/'
             x = requests.post(url, json=info)
-            print(x.text)
         return True

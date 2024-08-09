@@ -8,8 +8,8 @@
 # from backend.transfer.subjects.request import transfer_subjects, transfer_subject_levels
 # from backend.transfer.job.request import transfer_job
 # from language.request import transfer_language
-# from backend.transfer.teachers.request import transfer_teacher
-# from backend.transfer.user.request import transfer_users
+from backend.transfer.teachers.request import transfer_teacher
+from backend.transfer.user.request import transfer_users
 from backend.transfer.students.request import transfer_students
 from login.request import login
 
