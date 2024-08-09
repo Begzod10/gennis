@@ -12,23 +12,24 @@ def transfer_attendance_per_month():
             info = {
                 'old_id': attendance.id,
                 'student': attendance.student_id,
-                'teacher': attendance.teacher_id,
                 'group': attendance.group_id,
                 'total_debt': attendance.total_debt,
                 'ball_percentage': attendance.average_ball,
+                'remaining_debt': attendance.remaining_debt,
                 'payment': attendance.payment,
-                'month_date': attendance.calendar_month.date.strftime("%Y-%m"),
+                'month_date': attendance.month.date.strftime("%Y-%m"),
                 'total_charity': attendance.total_discount,
                 'system': 1,
                 'absent_days': attendance.absent_days,
                 'scored_days': attendance.scored_days,
                 'present_days': attendance.present_days
             }
-            url = 'http://localhost:8000/Transfer/attendance/create/'
-            x = requests.post(url, json=info)
-            print(x.text)
-            print(x.status_code)
-            request += f' {x.status_code}'
+            print(info)
+            # url = 'http://localhost:8000/Transfer/attendance/create/'
+            # x = requests.post(url, json=info)
+            # print(x.text)
+            # request += f' {x.status_code}'
+            break
         return request
 
 
@@ -45,18 +46,20 @@ def transfer_attendance_per_day():
                 'debt_per_day': attendance.balance_per_day,
                 'salary_per_day': attendance.salary_per_day,
                 'charity_per_day': attendance.discount_per_day,
-                'day': attendance.calendar_day.date.strftime("%Y-%m-%d"),
+                'day': attendance.day.date.strftime("%Y-%m-%d"),
                 'homework_ball': attendance.homework,
                 'dictionary_ball': attendance.dictionary,
                 'activeness_ball': attendance.activeness,
                 'average': attendance.average_ball,
                 'reason': attendance.reason,
-                'month_date': attendance.calendar_month.date.strftime("%Y-%m"),
+                'month_date': attendance.day.date.strftime("%Y-%m"),
                 'teacher_ball': attendance.teacher_ball,
             }
-            url = 'http://localhost:8000/Transfer/attendance/create/'
-            x = requests.post(url, json=info)
-            print(x.text)
-            print(x.status_code)
-            request += f' {x.status_code}'
+            print(info)
+            # url = 'http://localhost:8000/Transfer/attendance/create/'
+            # x = requests.post(url, json=info)
+            # print(x.text)
+            # request += f' {x.status_code}'
+            break
+
         return request
