@@ -4,7 +4,7 @@ from app import app
 from backend.models.models import StudentPayments
 
 
-def transfer_students():
+def transfer_students_Payment():
     with app.app_context():
         students = StudentPayments.query.order_by(StudentPayments.id).all()
         for student in students:
@@ -21,7 +21,7 @@ def transfer_students():
 
             }
             print(info)
-            url = 'http://localhost:8000/Transfer/students/students_create/'
+            url = 'http://localhost:8000/Transfer/students/students_payment_create/'
             x = requests.post(url, json=info)
             print(x.text)
         return True
