@@ -10,7 +10,7 @@
 # from language.request import transfer_language
 # from backend.transfer.teachers.request import transfer_teacher
 # from backend.transfer.user.request import transfer_users
-# from backend.transfer.students.request import transfer_student
+from backend.transfer.students.request import transfer_students, transfer_students_history_group
 from backend.transfer.group.request import transfer_group
 from backend.transfer.rooms.request import transfer_rooms, transfer_room_subjects, transfer_room_images
 from backend.transfer.time_table.request import transfer_group_time_table
@@ -37,3 +37,4 @@ transfer_rooms()
 transfer_room_subjects()
 
 transfer_group_time_table()
+# transfer_students_history_group()
