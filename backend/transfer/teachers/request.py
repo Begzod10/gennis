@@ -1,5 +1,3 @@
-import requests
-
 from app import app
 from backend.teacher.models import Teachers
 
@@ -21,4 +19,26 @@ def transfer_teacher():
             x = requests.post(url, json=info)
             print(x.text)
 
+    return True
+
+
+import requests
+
+
+def transfer_teacher_branches():
+    with app.app_context():
+        teachers = Teachers.query.filter(Teachers.locations != None).order_by(Teachers.id).all()
+
+        for teacher in teachers:
+            for location in teacher.locations:
+
+                info = {
+                    "teacher_id": teacher.id,
+                    "branch_id": location.id
+                }
+
+                url = 'http://localhost:8000/Transfer/teachers/teachers/add-branch/'
+                x = requests.post(url, json=info)
+                if x.status_code != 200 or x.status_code != 201:
+                    print(x.text)
     return True

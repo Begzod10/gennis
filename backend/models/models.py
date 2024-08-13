@@ -133,6 +133,11 @@ class CalendarMonth(db.Model):
     observation = relationship("TeacherObservationDay", backref="month",
                                order_by="TeacherObservationDay.id",
                                lazy='select')
+
+
+
+
+
     black_salary = relationship("TeacherBlackSalary", backref="month", order_by="TeacherBlackSalary.id",
                                 lazy="select")
     teacher_group_statistics = relationship("TeacherGroupStatistics", backref="month",

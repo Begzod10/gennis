@@ -1,6 +1,7 @@
-from backend.models.models import Students
 import requests
+
 from app import app
+from backend.models.models import Students, RegisterDeletedStudents
 
 
 def transfer_students():
@@ -29,5 +30,21 @@ def transfer_students():
                 "old_money": student.user.balance
             }
             url = 'http://localhost:8000/Transfer/students/students_create/'
+            x = requests.post(url, json=info)
+        return True
+
+
+def transfer_deleted_students():
+    with app.app_context():
+        students = RegisterDeletedStudents.query.order_by(RegisterDeletedStudents.id).all()
+        for student in students:
+            year_str = student.day.date.strftime(
+                '%Y-%m-%d') if student.day.date and student.day.date else None
+            info = {
+                "student": student.student_id,
+                "comment": student.reason,
+                "created": year_str
+            }
+            url = 'http://localhost:8000/Transfer/students/deleted_students_create/'
             x = requests.post(url, json=info)
         return True
