@@ -17,19 +17,18 @@ def transfer_attendance_per_month():
                 'ball_percentage': attendance.average_ball,
                 'remaining_debt': attendance.remaining_debt,
                 'payment': attendance.payment,
-                'month_date': attendance.month.date.strftime("%Y-%m"),
+                'month_date': attendance.month.date.strftime("%Y-%m-%d"),
                 'total_charity': attendance.total_discount,
                 'system': 1,
                 'absent_days': attendance.absent_days,
                 'scored_days': attendance.scored_days,
                 'present_days': attendance.present_days
             }
-            print(info)
-            # url = 'http://localhost:8000/Transfer/attendance/create/'
-            # x = requests.post(url, json=info)
-            # print(x.text)
-            # request += f' {x.status_code}'
-            break
+            url = 'http://localhost:8000/Transfer/attendance/create_month/'
+            x = requests.post(url, json=info)
+            print(x.text)
+            request += f' {x.status_code}'
+
         return request
 
 
