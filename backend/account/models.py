@@ -583,6 +583,7 @@ class CapitalExpenditure(db.Model):
     item_name = Column(String)
     payment_type_id = Column(Integer, ForeignKey('paymenttypes.id'))
     location_id = Column(Integer, ForeignKey('locations.id'))
+
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
     calendar_month = Column(Integer, ForeignKey("calendarmonth.id"))
     calendar_year = Column(Integer, ForeignKey("calendaryear.id"))

@@ -1,3 +1,4 @@
+from backend.models.models import Students, StudentHistoryGroups, StudentCharity
 import requests
 
 from app import app
@@ -47,4 +48,43 @@ def transfer_deleted_students():
             }
             url = 'http://localhost:8000/Transfer/students/deleted_students_create/'
             x = requests.post(url, json=info)
+        return True
+
+
+def transfer_students_history_group():
+    with app.app_context():
+        student_history_groups = StudentHistoryGroups.query.order_by(StudentHistoryGroups.id).all()
+        for student_history_group in student_history_groups:
+            info = {
+                'old_id': student_history_group.id,
+                "student": student_history_groups.student_id,
+                "teacher": student_history_groups.teacher_id,
+                "reason": student_history_groups.reason,
+                "group": student_history_groups.group_id,
+                "left_day": student_history_group.left_day.strftime("%Y-%m-%d"),
+                "joined_day": student_history_group.joined_day.strftime("%Y-%m-%d")
+            }
+            print(info)
+            url = 'http://localhost:8000/Transfer/students/students-history-group/'
+            x = requests.post(url, json=info)
+            print(x.text)
+        return True
+
+
+def transfer_students_charity():
+    with app.app_context():
+        student_charities = StudentCharity.query.order_by(StudentCharity.id).all()
+        for student_charity in student_charities:
+            info = {
+                'old_id': student_charity.id,
+                "student": student_charity.student_id,
+                "group": student_charity.group_id,
+                "charity_sum": student_charity.discount,
+                "added_data": student_charity.day.date.strftime("%Y-%m-%d"),
+                "branch": student_charity.location_id
+            }
+            print(info)
+            url = 'http://localhost:8000/Transfer/students/students-charity/'
+            x = requests.post(url, json=info)
+            print(x.text)
         return True

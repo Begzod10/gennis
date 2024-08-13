@@ -29,7 +29,7 @@ def transfer_group():
                 'subject': group.subject_id,
                 'teacher': [group.teacher_id],
                 'students': [student.id for student in group.student],
-                'course_type': group.course_type_id,
+                'course_types': group.course_type_id,
                 'branch': group.location_id,
                 'system': 1,
                 'teacher_salary': group.teacher_salary,
