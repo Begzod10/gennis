@@ -1,12 +1,11 @@
 import requests
 
 from app import app
-from backend.models.models import EducationLanguage, AttendanceHistoryStudent, AttendanceDays
+from backend.models.models import AttendanceHistoryStudent, AttendanceDays
 
 
 def transfer_attendance_per_month():
     with app.app_context():
-        request = 'attendance_per_month:'
         attendances = AttendanceHistoryStudent.query.order_by(AttendanceHistoryStudent.id).all()
         for attendance in attendances:
             info = {
@@ -26,10 +25,9 @@ def transfer_attendance_per_month():
             }
             url = 'http://localhost:8000/Transfer/attendance/create_month/'
             x = requests.post(url, json=info)
-            print(x.text)
-            request += f' {x.status_code}'
-
-        return request
+            if x.status_code != 200:
+                print(x.text)
+        return True
 
 
 def transfer_attendance_per_day():
@@ -51,14 +49,11 @@ def transfer_attendance_per_day():
                 'activeness_ball': attendance.activeness,
                 'average': attendance.average_ball,
                 'reason': attendance.reason,
-                'month_date': attendance.day.date.strftime("%Y-%m"),
+                'month_date': attendance.day.date.strftime("%Y-%m-%d"),
                 'teacher_ball': attendance.teacher_ball,
             }
-            print(info)
-            # url = 'http://localhost:8000/Transfer/attendance/create/'
-            # x = requests.post(url, json=info)
-            # print(x.text)
-            # request += f' {x.status_code}'
-            break
-
+            url = 'http://localhost:8000/Transfer/attendance/create_day/'
+            x = requests.post(url, json=info)
+            if x.status_code != 200:
+                print(x.text)
         return request
