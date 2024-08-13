@@ -13,6 +13,11 @@
 # from backend.transfer.students.request import transfer_student
 # from backend.transfer.overhead.request import transfer_overhead
 # from backend.transfer.attendance.request import transfer_attendance_per_day, transfer_attendance_per_month
+# from backend.transfer.students.request import transfer_students, transfer_students_history_group
+# from backend.transfer.group.request import transfer_group
+# from backend.transfer.rooms.request import transfer_rooms, transfer_room_subjects, transfer_room_images
+# from backend.transfer.time_table.request import transfer_group_time_table
+# from backend.transfer.attendance.request import transfer_attendance_per_day, transfer_attendance_per_month
 from login.request import login
 
 login = login()
@@ -29,7 +34,10 @@ login = login()
 # transfer_users(login)
 # transfer_teacher()
 # transfer_students()
+# transfer_group()
 # transfer_attendance_per_day()
 # transfer_attendance_per_month()
-
-
+# transfer_rooms()
+# transfer_room_subjects()
+# transfer_group_time_table()
+# transfer_students_history_group()
