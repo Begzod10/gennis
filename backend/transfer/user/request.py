@@ -1,6 +1,7 @@
-from backend.models.models import Users
 import requests
+
 from app import app
+from backend.models.models import Users
 
 
 def transfer_users(token):
@@ -48,3 +49,22 @@ def transfer_users(token):
                         x = requests.post(url, json=info)
                         print(x.text)
         return True
+
+
+def transfer_user_groups():
+    with app.app_context():
+        users = Users.query.filter(Users.role_info != None).order_by(Users.id).all()
+
+        for user in users:
+
+            info = {
+                "user_id": user.id,
+                "group_id": user.role_info.type_role
+            }
+
+            url = 'http://localhost:8000/Transfer/users/user/job/'
+            x = requests.post(url, json=info)
+            if x.status_code != 200 or x.status_code != 201:
+                print(x.text)
+
+    return True
