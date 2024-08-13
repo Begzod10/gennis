@@ -589,7 +589,6 @@ class CapitalExpenditure(db.Model):
     calendar_year = Column(Integer, ForeignKey("calendaryear.id"))
     account_period_id = Column(Integer, ForeignKey('accountingperiod.id'))
     by_who = Column(Integer, ForeignKey("users.id"))
-
     old_id = Column(Integer)
 
 
