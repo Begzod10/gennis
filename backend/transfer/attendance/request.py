@@ -6,12 +6,13 @@ from backend.models.models import AttendanceHistoryStudent, AttendanceDays
 
 def transfer_attendance_per_month():
     with app.app_context():
-        attendances = AttendanceHistoryStudent.query.order_by(AttendanceHistoryStudent.id).all()
+        attendances = AttendanceHistoryStudent.query.filter(AttendanceHistoryStudent.group != None).order_by(AttendanceHistoryStudent.id).all()
         for attendance in attendances:
             info = {
                 'old_id': attendance.id,
                 'student': attendance.student_id,
                 'group': attendance.group_id,
+                'teacher': attendance.group.teacher_id,
                 'total_debt': attendance.total_debt,
                 'ball_percentage': attendance.average_ball,
                 'remaining_debt': attendance.remaining_debt,
