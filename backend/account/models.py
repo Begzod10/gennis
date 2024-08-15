@@ -143,12 +143,15 @@ class UserBooks(db.Model):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
     location_id = Column(Integer, ForeignKey('locations.id'))
+
     calendar_day = Column(Integer, ForeignKey('calendarday.id'))
     calendar_month = Column(Integer, ForeignKey("calendarmonth.id"))
     calendar_year = Column(Integer, ForeignKey("calendaryear.id"))
+
     payment_sum = Column(Integer)
     book_order_id = Column(Integer, ForeignKey('book_order.id'))
     account_period_id = Column(Integer, ForeignKey('accountingperiod.id'))
+
     salary_location_id = Column(Integer, ForeignKey("teachersalary.id"))
     salary_id = Column(Integer, ForeignKey('staffsalary.id'))
 
