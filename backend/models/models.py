@@ -35,7 +35,10 @@ from backend.certificate.models import *
 from backend.book.models import *
 from backend.lead.models import *
 from backend.for_programmers.models import *
-from backend.tasks.models import *
+from backend.tasks.models.models import *
+
+
+
 
 
 class CalendarYear(db.Model):

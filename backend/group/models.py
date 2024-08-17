@@ -157,8 +157,6 @@ class Attendance(db.Model):
     ball_percentage = Column(Integer)
 
 
-
-
 class AttendanceDays(db.Model):
     __tablename__ = "attendancedays"
     id = Column(Integer, primary_key=True)
@@ -183,15 +181,16 @@ class AttendanceDays(db.Model):
     teacher_ball = Column(Integer)
     calling_status = Column(Boolean, default=False)
     calling_date = Column(DateTime)
-    def to_dict(self,entire=False):
-        if self.status == 1 or self.status ==2:
+
+    def to_dict(self, entire=False):
+        if self.status == 1 or self.status == 2:
             status = True
         else:
             status = False
         return {
             "id": self.id,
             "day": self.day.date.strftime("%d"),
-            'week_day':self.day.date.strftime("%A"),
+            'week_day': self.day.date.strftime("%A"),
             "status": status,
             "student": {
                 "id": self.student.id,
@@ -199,6 +198,7 @@ class AttendanceDays(db.Model):
                 "surname": self.student.user.surname
             }
         }
+
     def convert_json(self, entire=False):
         if self.status == 1:
             status = True

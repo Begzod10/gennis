@@ -5,7 +5,7 @@ from backend.functions.utils import api, find_calendar_date, get_json_field, upd
     update_teacher_salary_id, update_salary
 from backend.models.models import Teachers, TeacherSalary, StaffSalary, Staff, PaymentTypes, DeletedStaffSalaries, \
     UserBooks, StaffSalaries, TeacherSalaries, DeletedTeacherSalaries, AccountingPeriod, CalendarMonth, StudentPayments, \
-    Users, CalendarYear, Locations, TeacherBlackSalary
+    Users, CalendarYear, Locations, TeacherBlackSalary, CalendarDay, Students
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.functions.debt_salary_update import staff_salary_update
 from backend.functions.utils import iterate_models
@@ -259,16 +259,6 @@ def teacher_salary_inside(salary_id, user_id):
 @jwt_required()
 def black_salary(teacher_id):
     teacher = Teachers.query.filter(Teachers.user_id == teacher_id).first()
-    # teacher_get = Teachers.query.filter(Teachers.user_id == 6).first()
-    # print(teacher_get.user.name)
-    # month = datetime.datetime.strptime("2024-04", "%Y-%m")
-    # calendar_month = CalendarMonth.query.filter(CalendarMonth.date == month).first()
-    # black_salaries_teracher = TeacherBlackSalary.query.filter(TeacherBlackSalary.teacher_id == teacher_get.id,
-    #                                                           TeacherBlackSalary.calendar_month == calendar_month.id).all()
-    # print(black_salaries_teracher)
-    # for sal in black_salaries_teracher:
-    #     sal.status = True
-    #     db.session.commit()
     black_salaries = TeacherBlackSalary.query.filter(TeacherBlackSalary.teacher_id == teacher.id,
                                                      ).filter(
         or_(TeacherBlackSalary.status == False, TeacherBlackSalary.status == None)).order_by(
@@ -340,6 +330,26 @@ def salary_give_teacher(salary_id, user_id):
     get_salary = int(get_json_field('payment'))
     reason = get_json_field('reason')
     payment_type = int(get_json_field('typePayment'))
+    current_year = datetime.datetime.now().year
+    old_year = datetime.datetime.now().year - 1
+    month = str(datetime.datetime.now().month)
+    month_get = get_json_field('month')
+    day = get_json_field('day')
+    if month_get == "12" and month == "01":
+        current_year = old_year
+    if not month_get:
+        month_get = month
+
+    date_day = str(current_year) + "-" + str(month_get) + "-" + str(day)
+    date_month = str(current_year) + "-" + str(month_get)
+    date_year = str(current_year)
+    date_day = datetime.datetime.strptime(date_day, "%Y-%m-%d")
+    date_month = datetime.datetime.strptime(date_month, "%Y-%m")
+    date_year = datetime.datetime.strptime(date_year, "%Y")
+    calendar_year = CalendarYear.query.filter(CalendarYear.date == date_year).first()
+    calendar_month = CalendarMonth.query.filter(CalendarMonth.date == date_month).first()
+    calendar_day = CalendarDay.query.filter(CalendarDay.date == date_day).first()
+
     payment_type_id = PaymentTypes.query.filter(PaymentTypes.id == payment_type).first()
     accounting_period = db.session.query(AccountingPeriod).join(AccountingPeriod.month).options(
         contains_eager(AccountingPeriod.month)).order_by(desc(CalendarMonth.id)).first()

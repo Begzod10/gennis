@@ -25,6 +25,7 @@ class TasksStatistics(db.Model):
     completed_tasks_percentage = Column(Integer, default=0)
     location_id = Column(Integer, ForeignKey('locations.id'))
     task_students = relationship("TaskStudents", backref="tasksstatistics", order_by='TaskStudents.id')
+    total_tasks = Column(Integer, default=0)
 
 
 class TaskDailyStatistics(db.Model):
@@ -38,6 +39,7 @@ class TaskDailyStatistics(db.Model):
     completed_tasks = Column(Integer, default=0)
     in_progress_tasks = Column(Integer)
     completed_tasks_percentage = Column(Integer, default=0)
+    total_tasks = Column(Integer, default=0)
 
 
 class TaskStudents(db.Model):

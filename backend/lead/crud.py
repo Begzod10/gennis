@@ -6,10 +6,11 @@ from .models import Lead, LeadInfos
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics
-from backend.student.calling_to_students import change_statistics
+from backend.student.calling_to_students import change_statistics, update_all_ratings
 from backend.models.models import Users
 from backend.lead.functions import update_task_statistics, update_posted_tasks, get_lead_tasks, \
     get_completed_lead_tasks
+from backend.models.models import db, extract
 
 
 @app.route(f'{api}/register_lead', methods=['POST'])
@@ -48,8 +49,10 @@ def register_lead():
 @app.route(f'{api}/get_leads_location/<status>/<location_id>')
 @jwt_required()
 def get_leads_location(status, location_id):
+    update_posted_tasks()
     if status == "news":
         change_statistics(location_id)
+
         leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted == False).order_by(desc(Lead.id)).all()
         leads_info = []
         completed_tasks = []
@@ -58,9 +61,6 @@ def get_leads_location(status, location_id):
                 leads_info.append(get_lead_tasks(lead))
             if get_completed_lead_tasks(lead) != None:
                 completed_tasks.append(get_completed_lead_tasks(lead))
-
-        print(leads_info)
-        print(completed_tasks)
         return jsonify({
             "leads": leads_info,
             'completed_tasks': completed_tasks
@@ -77,11 +77,9 @@ def get_leads_location(status, location_id):
 def crud_lead(pm):
     user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
     calendar_year, calendar_month, calendar_day = find_calendar_date()
-    today = datetime.today()
-    date_strptime = datetime.strptime(f"{today.year}-{today.month}-{today.day}", "%Y-%m-%d")
-    lead = Lead.query.filter(Lead.id == pm).first()
-    task_type = Tasks.query.filter_by(name='leads').first()
+    today = datetime.now()
 
+    lead = Lead.query.filter(Lead.id == pm).first()
     if request.method == "DELETE":
         comment = get_json_field('comment')
         location_id = get_json_field('location_id')
@@ -90,30 +88,76 @@ def crud_lead(pm):
         lead.deleted = True
         lead.comment = comment
         db.session.commit()
-        update_task_statistics(user, status, calendar_day, location_id, task_type)
-        change_statistics(location_id)
+        # update_task_statistics(user, status, calendar_day, location_id, task_type)
+        task_type = Tasks.query.filter_by(name='leads').first()
+        task_statistics = TasksStatistics.query.filter_by(
+            task_id=task_type.id,
+            calendar_day=calendar_day.id,
+            location_id=user.location_id
+        ).first()
+        if task_statistics:
+            task_statistics.total_tasks -= 1
+            db.session.commit()
+            task_statistics.in_progress_tasks = task_statistics.total_tasks - task_statistics.completed_tasks
+            db.session.commit()
+            leads = Lead.query.filter(Lead.location_id == user.location_id, Lead.deleted != True).all()
+            lead_infos = LeadInfos.query.filter(
+                extract("day", LeadInfos.added_date) == int(calendar_day.date.strftime("%d")),
+                LeadInfos.lead_id.in_([lead.id for lead in leads])).count()
+            TasksStatistics.query.filter_by(id=task_statistics.id).update({
+                'completed_tasks': lead_infos,
+            })
+            db.session.commit()
+            task_statistics.in_progress_tasks = task_statistics.total_tasks - lead_infos
+            db.session.commit()
+            updated_task_statistics = TasksStatistics.query.filter_by(id=task_statistics.id).first()
+            cm_tasks = round(
+                (
+                        task_statistics.completed_tasks / task_statistics.total_tasks) * 100) if task_statistics.completed_tasks else 0
 
+            TasksStatistics.query.filter_by(id=updated_task_statistics.id).update({
+                'completed_tasks_percentage': cm_tasks
+            })
+            db.session.commit()
+        daily_statistics = TaskDailyStatistics.query.filter(TaskDailyStatistics.calendar_day == calendar_day.id,
+                                                            TaskDailyStatistics.location_id == location_id).order_by(
+            TaskDailyStatistics.id).first()
+        if daily_statistics:
+            daily_statistics.total_tasks -= 1
+            print(daily_statistics.total_tasks - 1)
+            db.session.commit()
+            update_all_ratings()
         return jsonify({"msg": "O'quvchi o'chirildi", "success": True, })
     if request.method == "POST":
         comment = get_json_field('comment')
         date = get_json_field('date')
         date = datetime.strptime(date, '%Y-%m-%d')
         location_id = get_json_field('location_id')
-        added_date = datetime.strptime(f'{today.year}-{today.month}-{today.day}', '%Y-%m-%d')
         info = {
             "lead_id": lead.id,
             "day": date,
             "comment": comment,
-            'added_date': added_date
+            'added_date': calendar_day.date
         }
-        info = LeadInfos(**info)
-        info.add()
-        update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type, location_id)
-        return jsonify({
-            "msg": "Komment belgilandi",
-            "success": True,
-            "lead": lead.convert_json()
-        })
+        if date > calendar_day.date:
+            exist_lead = LeadInfos.query.filter(LeadInfos.lead_id == lead.id,
+                                                LeadInfos.added_date == calendar_day.date).first()
+            if not exist_lead:
+                info = LeadInfos(**info)
+                info.add()
+
+            return jsonify({
+                "msg": "Komment belgilandi",
+                "success": True,
+                "lead": lead.convert_json(),
+                "lead_info": update_posted_tasks(),
+                "info": update_all_ratings()
+            })
+        else:
+            return jsonify({
+                'msg': "Eski sana kiritilgan",
+
+            })
     if request.method == "GET":
         get_comments = LeadInfos.query.filter(LeadInfos.lead_id == lead.id).order_by(desc(LeadInfos.id)).all()
         return jsonify({

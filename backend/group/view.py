@@ -381,7 +381,8 @@ def attendances(group_id):
         year = get_json_field('year')
 
         month = get_json_field('month')
-
+        print(year)
+        print(month)
         return jsonify({
 
             "data": {

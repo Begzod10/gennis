@@ -107,9 +107,13 @@ def delete_group(group_id):
             if time in st.time_table:
                 st.time_table.remove(time)
                 db.session.commit()
-            if time in teacher.time_table:
-                teacher.time_table.remove(time)
-                db.session.commit()
+    for time in time_table:
+        print('vaqt', time)
+        if time in teacher.time_table:
+            print('vaqt', time)
+            teacher.time_table.remove(time)
+            db.session.commit()
+    print(teacher.time_table)
     for time in time_table:
         Group_Room_Week.query.filter(Group_Room_Week.id == time.id).delete()
         db.session.commit()

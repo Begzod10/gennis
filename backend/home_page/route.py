@@ -183,7 +183,7 @@ def get_home_info():
             info = {
                 'full_name': teacher.user.surname + ' ' + teacher.user.name,
                 'subjects': teacher_subjects,
-                'id': teacher.id,
+                'id': teacher.user.id,
                 'teacher_img': teacher.user.photo_profile,
                 'text': data.text,
                 'links': data.json2(),
@@ -192,7 +192,7 @@ def get_home_info():
             info = {
                 'full_name': teacher.user.surname + ' ' + teacher.user.name,
                 'subjects': teacher_subjects,
-                'id': teacher.id,
+                'id': teacher.user.id,
                 'teacher_img': teacher.user.photo_profile,
                 'text': None,
                 'links': None,

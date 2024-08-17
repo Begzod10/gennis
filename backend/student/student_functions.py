@@ -240,11 +240,6 @@ def get_filtered_students_list(location_id):
 
     for student in students:
         for subject in student.subject:
-            # wed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4,
-            #        5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-            #        9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-            #        3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, ]
-            # for d in wed:
             if subject.id not in subjects_with_students:
                 subjects_with_students[subject.id] = {
                     "id": subject.id,
@@ -263,26 +258,21 @@ def newStudents_deleted(location_id):
         Users.location_id == location_id, Users.student != None, Students.deleted_from_register != None,
     ).join(Users.day).options(contains_eager(Users.month)).order_by(
         desc(Users.id)).all()
-    list_students = [
-        {
-            "id": st.id,
-            "name": st.name.title(),
-            "surname": st.surname.title(),
-            "username": st.username,
-            "language": st.language.name,
-            "age": st.age,
-            "reg_date": st.day.date.strftime("%Y-%m-%d"),
-            "deleted_date": st.student.deleted_from_register[0].day.date.strftime("%Y-%m-%d"),
-            "comment": st.comment,
-            "subjects": [sub.name for sub in st.student.subject],
-            "role": role.role,
-            "photo_profile": st.photo_profile,
-            "location_id": st.location_id
-        } for st in students
-    ]
-    return jsonify({
-        "newStudents": list_students
-    })
+    students = Students.query.join(Users).filter(Users.location_id == location_id, Users.student != None,
+                                                 Students.subject != None,
+                                                 Students.deleted_from_register != None).order_by(
+        desc(Students.id)).all()
+    subjects_with_students = {}
+    for student in students:
+        for subject in student.subject:
+            if subject.id not in subjects_with_students:
+                subjects_with_students[subject.id] = {
+                    "id": subject.id,
+                    "name": subject.name,
+                    "students": []
+                }
+            subjects_with_students[subject.id]["students"].append(student.convert_json())
+    return jsonify(list(subjects_with_students.values()))
 
 
 @app.route(f'{api}/create_contract/<int:user_id>', methods=["POST"])
@@ -332,6 +322,7 @@ def create_contract(user_id):
     all_charity = 0
     for char in student_charity:
         all_charity += char.discount
+    print('all charity', all_charity)
     contract_data = Contract_Students_Data.query.filter(Contract_Students_Data.location_id == location.id,
                                                         Contract_Students_Data.year == calendar_year.date).first()
     if not contract:
@@ -403,7 +394,7 @@ def create_contract(user_id):
         9].text = f"1.1 Mazkur shartnomaga asosan oʻquvchining ota-onasi (yoki qonuniy vakili) nodavlat taʼlim muassasasiga maktabdan tashqari taʼlim olish maqsadida oʻzining voyaga yetmagan farzandi  {user.name.title()} {user.surname.title()} {user.father_name[0].title()}{user.father_name[1:].lower()} ni"
 
     doc.paragraphs[
-        15].text = f"2.1. Oʻquvchining nodavlat taʼlim muassasasida taʼlim olishi uchun bir oylik toʻlov summasi {abs(student.combined_debt) - all_charity} va {contract.expire_date.strftime('%d-%m-%Y')} muddatgacha {abs(((student.combined_debt) - all_charity) * month)}  soʻmni tashkil etadi."
+        15].text = f"2.1. Oʻquvchining nodavlat taʼlim muassasasida taʼlim olishi uchun bir oylik toʻlov summasi {abs(student.combined_debt)} va {contract.expire_date.strftime('%d-%m-%Y')} muddatgacha {abs(((student.combined_debt) - all_charity) * month)}  soʻmni tashkil etadi."
     doc.paragraphs[
         69].text = f"7.1.Mazkur shartnoma tomonlar oʻrtasida imzolangan kundan boshlab yuridik kuchga ega hisoblanadi va {contract.expire_date.strftime('%d-%m-%Y')} muddatga qadar amal qiladi"
     info = [

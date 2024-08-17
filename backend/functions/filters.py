@@ -69,7 +69,8 @@ def block_information2(location_id):
         "rooms": room_list,
         "days": day_list,
         "years": iterate_models(calendar_years),
-        "group_reasons": iterate_models(group_reasons)
+        "group_reasons": iterate_models(group_reasons),
+        "data_days": old_current_dates(observation=True)
     }
     return jsonify({
         "data": data
@@ -642,7 +643,8 @@ def old_current_dates(group_id=0, observation=False):
     if group_id != 0:
         day_list = weekday_from_date(day_list, current_month, current_year, week_list)
         old_days = weekday_from_date(old_days, old_month, old_year, week_list)
-    if not observation or current_day > 3:
+    observation = True
+    if not observation:
         data = [
             {
                 "name": calendar_month.date.strftime("%h"),

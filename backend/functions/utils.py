@@ -1,3 +1,5 @@
+import pprint
+
 from app import request, db, classroom_server
 import requests
 from backend.models.models import CalendarDay, CalendarMonth, CalendarYear, AccountingPeriod, Professions, PaymentTypes, \
@@ -7,12 +9,14 @@ from dateutil.relativedelta import relativedelta
 from calendar import monthrange
 import uuid
 from datetime import datetime
+import pytz
 
 api = '/api'
 
 
 def today():
-    get_today = datetime.today()
+    tashkent_time = pytz.timezone("Asia/Tashkent")
+    get_today = datetime.now(tashkent_time)
     return get_today
 
 

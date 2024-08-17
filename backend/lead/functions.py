@@ -2,8 +2,9 @@ from backend.models.models import db, extract
 from backend.functions.utils import desc
 from backend.tasks.models.models import Tasks, TasksStatistics, TaskDailyStatistics
 from datetime import datetime
-from backend.models.models import Lead,LeadInfos
+from backend.models.models import Lead, LeadInfos, Users
 from backend.functions.utils import find_calendar_date
+from flask_jwt_extended import get_jwt_identity
 
 
 def update_task_statistics(user, status, calendar_day, location_id, task_type):
@@ -77,52 +78,39 @@ def update_task_statistics(user, status, calendar_day, location_id, task_type):
         db.session.commit()
 
 
-def update_posted_tasks(user, date, date_strptime, calendar_day, info, task_type, location_id):
-    if date != date_strptime:
-        task_statistics = TasksStatistics.query.filter_by(
-            task_id=task_type.id,
-            calendar_day=calendar_day.id,
-            location_id=info.lead.location_id
-        ).first()
-        leads = Lead.query.filter(Lead.location_id == location_id, Lead.deleted != True).all()
-        lead_infos = LeadInfos.query.filter(
-            extract("day", LeadInfos.added_date) == int(calendar_day.date.strftime("%d")),
-            LeadInfos.lead_id.in_([lead.id for lead in leads])).count()
-        TasksStatistics.query.filter_by(id=task_statistics.id).update({
-            'completed_tasks': lead_infos,
-        })
-        db.session.commit()
-        updated_task_statistics = TasksStatistics.query.filter_by(id=task_statistics.id).first()
-        cm_tasks = round((
-                                 task_statistics.completed_tasks / task_statistics.in_progress_tasks) * 100) if task_statistics.completed_tasks else 0
+def update_posted_tasks():
+    user = Users.query.filter(Users.user_id == get_jwt_identity()).first()
+    calendar_year, calendar_month, calendar_day = find_calendar_date()
+    task_type = Tasks.query.filter_by(name='leads').first()
+    task_statistics = TasksStatistics.query.filter_by(
+        task_id=task_type.id,
+        calendar_day=calendar_day.id,
+        location_id=user.location_id
+    ).first()
+    leads = Lead.query.filter(Lead.location_id == user.location_id, Lead.deleted != True).all()
+    lead_infos = LeadInfos.query.filter(
+        extract("day", LeadInfos.added_date) == int(calendar_day.date.strftime("%d")),
+        LeadInfos.lead_id.in_([lead.id for lead in leads])).count()
+    TasksStatistics.query.filter_by(id=task_statistics.id).update({
+        'completed_tasks': lead_infos,
+    })
+    db.session.commit()
+    task_statistics.in_progress_tasks = task_statistics.total_tasks - lead_infos
+    db.session.commit()
+    updated_task_statistics = TasksStatistics.query.filter_by(id=task_statistics.id).first()
+    cm_tasks = round(
+        (task_statistics.completed_tasks / task_statistics.total_tasks) * 100) if task_statistics.completed_tasks else 0
 
-        TasksStatistics.query.filter_by(id=updated_task_statistics.id).update({
-            'completed_tasks_percentage': cm_tasks
-        })
-        db.session.commit()
-        overall_location_statistics = TasksStatistics.query.filter_by(
-            user_id=user.id,
-            calendar_day=calendar_day.id,
-            location_id=info.lead.location_id
-        ).all()
-        completed_tasks = sum(stat.completed_tasks for stat in overall_location_statistics)
-        tasks_daily_statistics = TaskDailyStatistics.query.filter_by(
-            user_id=user.id,
-            location_id=updated_task_statistics.location_id,
-            calendar_day=calendar_day.id
-        ).first()
-        completed_tasks_percentage = round(
-            (completed_tasks / tasks_daily_statistics.in_progress_tasks) * 100) if completed_tasks else 0
+    TasksStatistics.query.filter_by(id=updated_task_statistics.id).update({
+        'completed_tasks_percentage': cm_tasks
+    })
+    db.session.commit()
 
-        TaskDailyStatistics.query.filter_by(
-            user_id=user.id,
-            location_id=updated_task_statistics.location_id,
-            calendar_day=calendar_day.id
-        ).update({
-            'completed_tasks': completed_tasks,
-            'completed_tasks_percentage': completed_tasks_percentage
-        })
-        db.session.commit()
+
+    return {
+        "in_progress": task_statistics.in_progress_tasks,
+        "completed_tasks": task_statistics.completed_tasks
+    }
 
 
 def get_lead_tasks(lead):
@@ -133,8 +121,8 @@ def get_lead_tasks(lead):
         for info in lead.infos:
             history.append(info.convert_json())
     if lead.infos:
-        if lead.infos[-1].day <= date_strptime:
-            day = lead.infos[-1].day
+        if lead.infos[0].day <= date_strptime:
+            day = lead.infos[0].day
             lead_day = int(day.strftime("%d"))
             current_month = int(datetime.today().strftime("%m"))
             current_day = int(datetime.today().strftime("%d"))
@@ -160,7 +148,6 @@ def get_lead_tasks(lead):
             }
     else:
         index = 1
-        print()
         return {
             "id": lead.id,
             "name": lead.name,
@@ -182,8 +169,7 @@ def get_completed_lead_tasks(lead):
         for info in lead.infos:
             history.append(info.convert_json())
     if lead.infos:
-        print(lead.infos[-1].added_date, date_strptime)
-        if lead.infos[-1].added_date == date_strptime:
+        if lead.infos[0].added_date == date_strptime:
             return {
                 "id": lead.id,
                 "name": lead.name,

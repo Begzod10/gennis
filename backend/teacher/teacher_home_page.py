@@ -6,6 +6,7 @@ from backend.functions.small_info import certificate
 import os
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from pprint import pprint
+from backend.functions.filters import iterate_models
 
 
 @app.route(f'{api}/add_student_certificate', methods=['POST'])
@@ -37,7 +38,7 @@ def add_student_certificate():
         return jsonify({
             "msg": "Student sertifikati yaratildi",
             "success": True,
-            "certificate": new.json()
+            "certificate": new.convert_json()
         })
     else:
         return jsonify({
@@ -93,12 +94,12 @@ def delete_student_certificate(certificate_id):
 
 @app.route(f'{api}/get_teacher_data/<int:teacher_id>', methods=['GET'])
 def get_teacher_data(teacher_id):
-    teacher = Teachers.query.filter(Teachers.id == teacher_id).first()
+    teacher = Teachers.query.filter(Teachers.user_id == teacher_id).first()
     data = TeacherData.query.filter(TeacherData.teacher_id == teacher.id).first()
     list = []
-    for item in StudentCertificate.query.filter(StudentCertificate.teacher_id == teacher.id).order_by(
-            StudentCertificate.id).all():
-        list.append(item.convert_json())
+    certificates = StudentCertificate.query.filter(StudentCertificate.teacher_id == teacher.id).order_by(
+        StudentCertificate.id).all()
+    certificates_list = iterate_models(certificates)
     teacher_subjects = []
     for subject in teacher.subject:
         teacher_subjects.append(subject.name)
@@ -106,7 +107,8 @@ def get_teacher_data(teacher_id):
         return jsonify({
             'data': data.convert_json(),
             'full_name': teacher.user.name + ' ' + teacher.user.surname,
-            'list': list,
+            "teacher_img": teacher.user.photo_profile,
+            'list': certificates_list,
             'subjects': teacher_subjects,
             'status': True
         })
@@ -114,7 +116,8 @@ def get_teacher_data(teacher_id):
         return jsonify({
             'status': False,
             'full_name': teacher.user.name + ' ' + teacher.user.surname,
-            'list': list,
+            "teacher_img": teacher.user.photo_profile,
+            'list': certificates_list,
             'subjects': teacher_subjects,
         })
 

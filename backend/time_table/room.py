@@ -1,4 +1,4 @@
-from backend.models.models import Rooms, Week, Group_Room_Week, RoomImages, Subjects
+from backend.models.models import Rooms, Week, Group_Room_Week, RoomImages, Subjects, Groups
 from backend.functions.utils import update_week
 from backend.functions.small_info import room_images, checkFile
 
@@ -79,7 +79,6 @@ def rooms_location(location_id):
 
 @app.route(f'{api}/room_profile/<int:room_id>')
 def room_profile(room_id):
-
     room = Rooms.query.filter(Rooms.id == room_id).first()
     room_image = []
     for img in room.images:
@@ -131,7 +130,6 @@ def room_profile(room_id):
 
 @app.route(f'{api}/edit_room/<int:room_id>', methods=['POST'])
 def edit_room(room_id):
-
     name = request.get_json()['name']
     electronic_board = request.get_json()['eBoard']
     seats_number = int(request.get_json()['seats'])
@@ -160,7 +158,6 @@ def edit_room(room_id):
 
 @app.route(f'{api}/delete_room_img/<int:img_id>')
 def delete_room_img(img_id):
-
     room_img = RoomImages.query.filter(RoomImages.id == img_id).first()
     if room_img.photo_url:
         if os.path.isfile(f'frontend/build/{room_img.photo_url}'):
@@ -195,12 +192,16 @@ def room_time_table(room_id):
             "room": time.room_id,
             "day": time.week_id
         }
+
         for teach in time.teacher:
+            group = Groups.query.filter(Groups.id == time.group_id).first()
             teach_info = {
                 "name": teach.user.name,
                 "surname": teach.user.surname,
                 "color": teach.table_color,
-                "group_id": time.group_id
+                "group_id": time.group_id,
+                "group_name": group.name
+
             }
             info['teacher'].append(teach_info)
         time_table_list.append(info)

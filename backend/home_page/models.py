@@ -8,7 +8,7 @@ class Link(db.Model):
     link = Column(String)
     img = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'id': self.id,
             'name': self.name,
@@ -28,7 +28,7 @@ class TeacherData(db.Model):
     facebook = Column(String)
     img = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'text': self.text,
             'telegram': self.telegram,
@@ -57,7 +57,7 @@ class StudentCertificate(db.Model):
     student_id = Column(Integer, ForeignKey('students.id'))
     img = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'id': self.id,
             'text': self.text,
@@ -69,6 +69,7 @@ class StudentCertificate(db.Model):
             'student_id': self.student.user.id,
             'teacher_id': self.teacher.user.id,
             'img': self.img,
+            "student_img": self.student.user.photo_profile
         }
         return info
 
@@ -82,7 +83,7 @@ class News(db.Model):
     links = relationship('NewsLink', backref="news", order_by="NewsLink.id", lazy="select")
     images = relationship('NewsImg', backref="news", order_by="NewsImg.id", lazy="select")
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         link_list = []
         for link in self.links:
             link_list.append(link.convert_json())
@@ -107,7 +108,7 @@ class NewsLink(db.Model):
     link = Column(String)
     news_id = Column(Integer, ForeignKey('news.id'))
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'id': self.id,
             'name': self.name,
@@ -122,7 +123,7 @@ class NewsImg(db.Model):
     url = Column(String)
     new_id = Column(Integer, ForeignKey('news.id'))
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'id': self.id,
             'url': self.url
@@ -137,7 +138,7 @@ class HomeDesign(db.Model):
     text = Column(String)
     img = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'name': self.name,
             'text': self.text,
@@ -153,7 +154,7 @@ class HomeVideo(db.Model):
     text = Column(String)
     url = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         info = {
             'name': self.name,
             'text': self.text,
@@ -169,7 +170,7 @@ class Advantages(db.Model):
     text = Column(String)
     img = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, entire=False):
         return {
             'id': self.id,
             'name': self.name,

@@ -133,7 +133,7 @@ def attendance_classroom(group_id):
 
 
 @app.route(f'{api}/make_attendance_classroom', methods=['POST'])
-# @jwt_required()
+@jwt_required()
 def make_attendance_classroom():
     """
     make attendance to students, update students' balance and teacher salary
@@ -142,6 +142,7 @@ def make_attendance_classroom():
     month = str(datetime.now().month)
     current_year = datetime.now().year
     old_year = datetime.now().year - 1
+    pprint(request.get_json())
     data = request.get_json()['data']
     day = data['day']
     get_month = data['month']
@@ -343,15 +344,10 @@ def make_attendance_classroom():
             "salary": teacher.user.balance,
             "debtor": student.debtor
         })
-    if errors:
-        status = "danger"
-    else:
-        status = "success"
-
     return jsonify({
         "message": "O'quvchilar davomat qilindi",
-        "status": status,
-        "errors": errors
+        "status": "success",
+
     })
 
 

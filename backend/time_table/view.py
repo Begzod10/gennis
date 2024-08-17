@@ -1,5 +1,5 @@
-from app import app,  jsonify
-from backend.models.models import Week, Group_Room_Week, Rooms
+from app import app, jsonify
+from backend.models.models import Week, Group_Room_Week, Rooms, Groups
 from backend.functions.utils import update_week, api
 
 from flask_jwt_extended import jwt_required
@@ -29,21 +29,24 @@ def view_table(location_id, day):
             "week": time.week_id
         }
         for teach in time.teacher:
+            group = Groups.query.filter(Groups.id == time.group_id).first()
             teach_info = {
                 "name": teach.user.name,
                 "surname": teach.user.surname,
                 "color": teach.table_color,
-                "group_id": time.group_id
+                "group_id": time.group_id,
+                "group_name": group.name
+
             }
             info['teacher'].append(teach_info)
         time_table_list.append(info)
-    rooms_list = [{"id": room.id,"name": room.name} for room in rooms]
+    rooms_list = [{"id": room.id, "name": room.name} for room in rooms]
     week_days_list = [
         {
             "id": room.id,
             "name": room.name,
             "value": room.eng_name
-        }for room in week_days
+        } for room in week_days
     ]
     day_dict = {gr['id']: gr for gr in time_table_list}
     filtered_time_table_list = list(day_dict.values())

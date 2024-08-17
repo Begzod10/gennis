@@ -2,12 +2,14 @@ from app import app, db, desc, contains_eager, request, jsonify
 
 from backend.models.models import AccountingPeriod, StudentPayments, Students, AttendanceHistoryStudent, PaymentTypes, \
     CalendarMonth, Groups, DeletedBookPayments, StudentCharity, DeletedStudentPayments, BookPayments, \
-    TeacherBlackSalary, Teachers
+    TeacherBlackSalary, Teachers, CalendarDay, CalendarYear, TaskStudents, TasksStatistics, TaskDailyStatistics, Tasks
 from flask_jwt_extended import jwt_required
 from datetime import timedelta
 from backend.student.class_model import Student_Functions
 from datetime import datetime
 from backend.functions.utils import get_json_field, find_calendar_date, api, update_salary
+
+from backend.student.functions import update_all_ratings
 
 
 @app.route(f'{api}/delete_payment/<int:payment_id>', methods=['POST'])
@@ -147,12 +149,31 @@ def get_payment(user_id):
         status = get_json_field('type')
         type_payment = get_json_field('typePayment')
         payment_sum = int(get_json_field('payment'))
+        current_year = datetime.now().year
+        old_year = datetime.now().year - 1
+        month = str(datetime.now().month)
+        month_get = get_json_field('month')
+        day = get_json_field('day')
+        if month_get == "12" and month == "01":
+            current_year = old_year
+        if not month_get:
+            month_get = month
+
         if status == "payment":
             status = True
+            date_day = str(current_year) + "-" + str(month_get) + "-" + str(day)
+            date_month = str(current_year) + "-" + str(month_get)
+            date_year = str(current_year)
+            date_day = datetime.strptime(date_day, "%Y-%m-%d")
+            date_month = datetime.strptime(date_month, "%Y-%m")
+            date_year = datetime.strptime(date_year, "%Y")
+            calendar_year = CalendarYear.query.filter(CalendarYear.date == date_year).first()
+            calendar_month = CalendarMonth.query.filter(CalendarMonth.date == date_month).first()
+            calendar_day = CalendarDay.query.filter(CalendarDay.date == date_day).first()
         else:
             status = False
 
-        calendar_year, calendar_month, calendar_day = find_calendar_date()
+            calendar_year, calendar_month, calendar_day = find_calendar_date()
 
         accounting_period = db.session.query(AccountingPeriod).join(AccountingPeriod.month).options(
             contains_eager(AccountingPeriod.month)).order_by(desc(CalendarMonth.id)).first()
@@ -266,7 +287,7 @@ def get_payment(user_id):
         st_functions.update_debt()
         st_functions.update_balance()
         student = Students.query.filter(Students.id == student.id).first()
-        if student.debtor == 1:
+        if student.debtor == 1 or student.debtor == 0:
             black_salaries = TeacherBlackSalary.query.filter(TeacherBlackSalary.student_id == student.id,
                                                              TeacherBlackSalary.status == False).all()
             for salary in black_salaries:
@@ -275,6 +296,19 @@ def get_payment(user_id):
                 db.session.commit()
                 teacher = Teachers.query.filter(Teachers.id == salary.teacher_id).first()
                 update_salary(teacher.user_id)
+        if student.debtor == 0:
+            task_type = Tasks.query.filter(Tasks.name == 'excuses').first()
+            task_statistics = TasksStatistics.query.filter(
+                TasksStatistics.task_id == task_type.id,
+                TasksStatistics.calendar_day == calendar_day.id,
+                TasksStatistics.location_id == student.user.location_id
+            ).first()
+            task_student = TaskStudents.query.filter(TaskStudents.task_id == task_type.id,
+                                                     TaskStudents.tasksstatistics_id == task_statistics.id,
+                                                     TaskStudents.student_id == student.id).first()
+            task_student.status = True
+            db.session.commit()
+            info = update_all_ratings()
         return jsonify({
             "success": True,
             "msg": "To'lov qabul qilindi"

@@ -411,40 +411,6 @@ def create_group():
     })
 
 
-@app.route(f'{api}/addGroup', methods=['GET', 'POST'])
-@jwt_required()
-def addGroup():
-    calendar_year, calendar_month, calendar_day = find_calendar_date()
-
-    group_id = int(get_json_field('group_id'))
-    group = Groups.query.filter(Groups.id == group_id).first()
-    subject = Subjects.query.filter(Subjects.id == group.subject_id).first()
-    student_list = get_json_field('checkedStudents')
-    student_id_list = []
-    for loc in student_list:
-        student_id_list.append(int(loc['id']))
-    msg = "O'quvchi guruhga qo'shildi"
-    if len(student_id_list) > 1:
-        msg = "O'quvchilar guruhga qo'shildi"
-    students_checked = db.session.query(Students).join(Students.user).options(contains_eager(Students.user)).filter(
-        Users.id.in_([user_id for user_id in student_id_list])).order_by('id').all()
-
-    for st in students_checked:
-        for sub in st.subject:
-            if sub.name == subject.name:
-                st.subject.remove(subject)
-        st.group.append(group)
-        group_history = StudentHistoryGroups(teacher_id=group.teacher_id, student_id=st.id, group_id=group.id,
-                                             joined_day=calendar_day.date)
-        db.session.add(group_history)
-        db.session.commit()
-    db.session.commit()
-    return jsonify({
-        "success": True,
-        "msg": msg
-    })
-
-
 @app.route(f'{api}/add_group_students2/<int:group_id>', methods=['POST', 'GET'])
 def add_group_students2(group_id):
     calendar_year, calendar_month, calendar_day = find_calendar_date()
@@ -458,11 +424,12 @@ def add_group_students2(group_id):
         msg = "O'quvchi guruhga qo'shildi"
         if len(student_id_list) > 1:
             msg = "O'quvchilar guruhga qo'shildi"
+        print('st',student_id_list)
         students_checked = db.session.query(Students).join(Students.user).options(contains_eager(Students.user)).filter(
-            Users.id.in_([user_id for user_id in student_id_list]), Students.deleted_from_register == None,
+            Users.id.in_([user_id for user_id in student_id_list]),
         ).order_by(
             'id').all()
-
+        print(students_checked)
         for st in students_checked:
             for sub in st.subject:
                 if sub.name == subject.name:

@@ -296,7 +296,6 @@ def observed_group_info(group_id):
 
                 })
             observation_list.append(info)
-    pprint(observation_list)
     return jsonify({
         "info": observation_list,
         "observation_options": iterate_models(observation_options),
