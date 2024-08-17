@@ -33,7 +33,8 @@ def transfer_attendance_per_month():
 def transfer_attendance_per_day():
     with app.app_context():
         request = 'attendance_per_day:'
-        attendances = AttendanceDays.query.order_by(AttendanceDays.id).all()
+        attendances = AttendanceDays.query.filter(AttendanceDays.id > 0, AttendanceDays.id < 1000).order_by(
+            AttendanceDays.id).all()
         for attendance in attendances:
             info = {
                 'old_id': attendance.id,
@@ -54,6 +55,6 @@ def transfer_attendance_per_day():
             }
             url = 'http://localhost:8000/Transfer/attendance/create_day/'
             x = requests.post(url, json=info)
-            if x.status_code != 200:
+            if x.status_code != 200 and x.status_code != 400:
                 print(x.text)
         return request
