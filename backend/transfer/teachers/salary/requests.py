@@ -34,6 +34,8 @@ def transfer_teacher_salary_list():
     with app.app_context():
         teachers = TeacherSalaries.query.order_by(TeacherSalaries.id).all()
         for teacher in teachers:
+            year_str = teacher.day.date.strftime(
+                '%Y-%m-%d') if teacher.calendar_day and teacher.day.date else None
             info = {
                 "teacher": teacher.teacher_id,
                 "salary_id": teacher.salary_location_id,
@@ -41,8 +43,10 @@ def transfer_teacher_salary_list():
                 "branch": teacher.location_id,
                 "comment": teacher.reason,
                 "deleted": False,
-                "salary": teacher.payment_sum
+                "salary": teacher.payment_sum,
+                'date': year_str
             }
+            print(info)
             url = 'http://localhost:8000/Transfer/teachers/teacher_salary_list/'
             x = requests.post(url, json=info)
             if x.status_code != 200:
